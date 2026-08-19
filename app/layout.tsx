@@ -29,10 +29,11 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
+      lang="id"
+      suppressHydrationWarning
       className={`${albertSans.variable} ${sourceSans.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col font-source bg-mist text-ink-1">
+      <body suppressHydrationWarning className="min-h-full flex flex-col font-source bg-mist text-ink-1">
         {children}
       </body>
     </html>

@@ -32,7 +32,26 @@ export async function apiFetch<T>(
 
   const contentType = response.headers.get('content-type');
   const isJson = contentType && contentType.includes('application/json');
-  const data = isJson ? await response.json() : null;
+  
+  let data: any = null;
+  if (isJson) {
+    const rawText = await response.text();
+    if (rawText && rawText.trim()) {
+      try {
+        data = JSON.parse(rawText.trim());
+      } catch {
+        // Fallback cleanup if response text contains trailing non-whitespace characters
+        const jsonMatch = rawText.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
+        if (jsonMatch) {
+          try {
+            data = JSON.parse(jsonMatch[0]);
+          } catch {
+            data = null;
+          }
+        }
+      }
+    }
+  }
 
   if (!response.ok) {
     const errorMessage =
