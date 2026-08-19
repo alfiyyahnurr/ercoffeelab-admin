@@ -46,18 +46,25 @@ export function parseStaffToken(token: string): StaffPayload | null {
     let base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
     while (base64.length % 4) base64 += '=';
 
-    const decodedStr = atob(base64);
-    let parsed: any;
+    const decodedRaw = atob(base64);
+    // Remove null bytes and trailing whitespace that cause JSON.parse position errors
+    const decodedStr = decodedRaw.replace(/\0/g, '').trim();
+
+    let parsed: any = null;
     try {
       parsed = JSON.parse(decodedStr);
     } catch {
-      const jsonPayload = decodeURIComponent(
-        decodedStr
-          .split('')
-          .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-          .join('')
-      );
-      parsed = JSON.parse(jsonPayload);
+      try {
+        const jsonPayload = decodeURIComponent(
+          decodedStr
+            .split('')
+            .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+            .join('')
+        );
+        parsed = JSON.parse(jsonPayload);
+      } catch {
+        return null;
+      }
     }
 
     if (!parsed || !parsed.sub) return null;
@@ -79,3 +86,4 @@ export function parseStaffToken(token: string): StaffPayload | null {
     return null;
   }
 }
+
