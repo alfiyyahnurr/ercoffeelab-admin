@@ -1,0 +1,118 @@
+@import "tailwindcss";
+
+:root {
+  --navy: #181F4B;
+  --navy-deep: #0E1230;
+  --navy-soft: #3B4B8C;
+  --gold: #C9A876;
+  --cream: #F6F3EC;
+  --mist: #F4F5F9;
+  --line: #E7E8F0;
+  --ink-1: #1E202B;
+  --ink-2: #6B7088;
+  --green: #3E8A5A;
+  --red: #C9576B;
+
+  --font-albert: var(--font-albert-sans), sans-serif;
+  --font-source: var(--font-source-sans), sans-serif;
+}
+
+@theme {
+  --color-navy: var(--navy);
+  --color-navy-deep: var(--navy-deep);
+  --color-navy-soft: var(--navy-soft);
+  --color-gold: var(--gold);
+  --color-cream: var(--cream);
+  --color-mist: var(--mist);
+  --color-line: var(--line);
+  --color-ink-1: var(--ink-1);
+  --color-ink-2: var(--ink-2);
+  --color-green: var(--green);
+  --color-red: var(--red);
+
+  --font-albert: var(--font-albert-sans), sans-serif;
+  --font-source: var(--font-source-sans), sans-serif;
+}
+
+body {
+  background-color: var(--mist);
+  color: var(--ink-1);
+  font-family: var(--font-source);
+}
+
+h1, h2, h3, h4, h5, h6, .font-display {
+  font-family: var(--font-albert);
+}
+
+/* Button & Clickable Hover Indicator Rules */
+button, a {
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+button:hover, a:hover {
+  cursor: pointer;
+}
+
+button:active, a:active {
+  transform: scale(0.98);
+}
+
+/* Glassmorphic Card Utilities */
+.glass-card {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+}
+
+.glass-dark {
+  background: rgba(14, 18, 48, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(201, 168, 118, 0.25);
+  border-radius: 0.75rem;
+}
+
+/* Modal Backdrop Utility */
+.modal-backdrop {
+  background: rgba(14, 18, 48, 0.5);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* Badge Utilities */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.badge-success {
+  background-color: #EAF5EE;
+  color: #3E8A5A;
+  border: 1px solid #C6E7D2;
+}
+
+.badge-warning {
+  background-color: #FEF6E6;
+  color: #C9A876;
+  border: 1px solid #F7E5C4;
+}
+
+.badge-info {
+  background-color: #EDF0FA;
+  color: #3B4B8C;
+  border: 1px solid #D2D9F3;
+}
+
+.badge-danger {
+  background-color: #FDF0F2;
+  color: #C9576B;
+  border: 1px solid #FAF1F3;
+}
