@@ -13,8 +13,29 @@ export default function ProtectedLayout({
   children: React.ReactNode;
 }) {
   const [collapsed, setCollapsed] = useState(false);
-  const [staff, setStaff] = useState<StaffPayload | null>(null);
-  const [selectedOutletId, setSelectedOutletId] = useState<number | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  // Instant client-side state initialization from stored token
+  const [staff, setStaff] = useState<StaffPayload | null>(() => {
+    if (typeof window !== 'undefined') {
+      const token = getStoredToken();
+      if (token) return parseStaffToken(token);
+    }
+    return null;
+  });
+
+  const [selectedOutletId, setSelectedOutletId] = useState<number | null>(() => {
+    if (typeof window !== 'undefined') {
+      const token = getStoredToken();
+      if (token) {
+        const parsed = parseStaffToken(token);
+        if (parsed?.role === 'outlet_admin' && parsed?.outletId) {
+          return parsed.outletId;
+        }
+      }
+    }
+    return null;
+  });
 
   const syncStaffState = (token: string) => {
     const parsedStaff = parseStaffToken(token);
@@ -29,11 +50,12 @@ export default function ProtectedLayout({
   };
 
   useEffect(() => {
+    setMounted(true);
     const token = getStoredToken();
     if (token) {
       syncStaffState(token);
 
-      // Fetch fresh staff profile directly from Neon Postgres database
+      // Re-fetch fresh staff profile from database seamlessly in background
       apiFetch<{ staff: StaffPayload }>('/api/auth/me')
         .then((res) => {
           if (res?.staff) {
@@ -45,7 +67,7 @@ export default function ProtectedLayout({
         })
         .catch(() => null);
 
-      // Re-sync HttpOnly session cookie on client mount to ensure server middleware stays 100% in sync
+      // Re-sync HttpOnly session cookie
       fetch('/api/set-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -53,15 +75,9 @@ export default function ProtectedLayout({
       }).catch(() => null);
     }
 
-    // Multi-tab session synchronization listener
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'ercoffeelab_staff_token' && e.newValue) {
         syncStaffState(e.newValue);
-        fetch('/api/set-session', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token: e.newValue }),
-        }).catch(() => null);
       }
     };
 
@@ -70,7 +86,7 @@ export default function ProtectedLayout({
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#F4F5F9] font-source text-[#1E202B] relative">
+    <div className="min-h-screen bg-[#F4F5F9] font-source text-[#1E202B] relative selection:bg-[#C9A876]/20">
       {/* Dynamic Navigation Sidebar */}
       <Sidebar
         collapsed={collapsed}
@@ -80,7 +96,7 @@ export default function ProtectedLayout({
 
       {/* Main Container Wrapper */}
       <div
-        className={`transition-all duration-300 flex flex-col min-h-screen ${
+        className={`transition-all duration-300 ease-in-out flex flex-col min-h-screen ${
           collapsed ? 'pl-[72px]' : 'pl-[260px]'
         }`}
       >
@@ -96,8 +112,12 @@ export default function ProtectedLayout({
         {/* Live Order Toast Notification */}
         <OrderAlertToast outletId={selectedOutletId ?? staff?.outletId ?? null} />
 
-        {/* Main Content Canvas */}
-        <main className="flex-1 p-6 bg-[#F4F5F9] overflow-x-hidden">
+        {/* Main Content Canvas with smooth transition */}
+        <main
+          className={`flex-1 p-6 bg-[#F4F5F9] overflow-x-hidden transition-opacity duration-300 ${
+            mounted ? 'opacity-100' : 'opacity-80'
+          }`}
+        >
           {children}
         </main>
       </div>

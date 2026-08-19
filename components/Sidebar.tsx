@@ -129,7 +129,7 @@ export default function Sidebar({
           <button
             onClick={onToggleCollapse}
             className="w-10 h-10 mx-auto rounded-full bg-[#181F4B] border border-[#C9A876]/40 flex items-center justify-center text-[#C9A876] shadow-sm cursor-pointer hover:scale-105 transition"
-            title={`${staff?.fullName || 'User'} (${staff?.role || 'super_admin'})`}
+            title={staff?.fullName || 'User Profile'}
           >
             <User className="w-5 h-5" />
           </button>
@@ -139,12 +139,12 @@ export default function Sidebar({
             <div className="w-10 h-10 rounded-full bg-[#181F4B] border border-[#C9A876]/40 flex items-center justify-center shrink-0 text-[#C9A876] shadow-sm">
               <User className="w-5 h-5" />
             </div>
-            <div className="overflow-hidden">
-              <p className="text-sm font-bold font-albert text-white truncate leading-tight">
-                {staff?.fullName || 'Staff User'}
+            <div className="overflow-hidden flex-1 min-h-[36px] flex flex-col justify-center">
+              <p suppressHydrationWarning className="text-sm font-bold font-albert text-white truncate leading-tight">
+                {staff?.fullName}
               </p>
-              <p className="text-[11px] font-medium text-[#C9A876] truncate mt-0.5">
-                {staff?.role || 'super_admin'}
+              <p suppressHydrationWarning className="text-[11px] font-medium text-[#C9A876] truncate mt-0.5 leading-tight">
+                {staff?.role}
               </p>
             </div>
           </div>

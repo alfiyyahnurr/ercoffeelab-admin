@@ -364,15 +364,15 @@ export default function Topbar({
             }}
             className="flex items-center gap-3 p-1.5 pr-3 rounded-xl hover:bg-[#F4F5F9] transition border border-transparent hover:border-[#E7E8F0] cursor-pointer"
           >
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#181F4B] to-[#3B4B8C] text-[#C9A876] flex items-center justify-center font-bold font-albert text-xs shadow-xs">
-              {staff?.fullName?.charAt(0)?.toUpperCase() || 'S'}
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#181F4B] to-[#3B4B8C] text-[#C9A876] flex items-center justify-center font-bold font-albert text-xs shadow-xs shrink-0">
+              <span suppressHydrationWarning>{staff?.fullName?.charAt(0)?.toUpperCase()}</span>
             </div>
-            <div className="text-left hidden sm:block">
-              <p className="text-xs font-bold font-albert text-[#1E202B] leading-tight">
-                {staff?.fullName || 'Staff User'}
+            <div className="text-left hidden sm:flex flex-col justify-center min-h-[32px]">
+              <p suppressHydrationWarning className="text-xs font-bold font-albert text-[#1E202B] leading-tight">
+                {staff?.fullName}
               </p>
-              <p className="text-[10px] text-[#6B7088] capitalize">
-                {staff?.role === 'super_admin' ? 'Super Admin' : 'Outlet Admin'}
+              <p suppressHydrationWarning className="text-[10px] text-[#6B7088] capitalize leading-tight">
+                {staff?.role === 'super_admin' ? 'Super Admin' : staff?.role === 'outlet_admin' ? 'Outlet Admin' : ''}
               </p>
             </div>
             <ChevronDown className="w-3.5 h-3.5 text-[#6B7088]" />
