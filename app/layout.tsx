@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import { Albert_Sans, Source_Sans_3 } from "next/font/google";
 import "./globals.css";
 
+// ERCoffeeLab Admin Panel Root Layout
+
+
 const albertSans = Albert_Sans({
   variable: "--font-albert-sans",
   subsets: ["latin"],
