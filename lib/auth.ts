@@ -77,8 +77,8 @@ export function parseStaffToken(token: string): StaffPayload | null {
 
     return {
       sub: Number(parsed.sub),
-      email: parsed.email || (role === 'super_admin' ? 'alfiyyah@gmail.com' : 'bandung.admin@ercoffeelab.com'),
-      fullName: parsed.fullName || (role === 'super_admin' ? 'Alfiyyah Admin' : 'Admin Outlet Bandung'),
+      email: parsed.email || (role === 'super_admin' ? 'admin@ercoffeelab.com' : 'bandung.admin@ercoffeelab.com'),
+      fullName: parsed.fullName || (role === 'super_admin' ? 'Super Admin' : 'Admin Outlet Bandung'),
       role,
       outletId: role === 'super_admin' ? null : (rawOutletId ?? 1),
     };

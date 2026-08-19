@@ -5,6 +5,7 @@ import Sidebar from '@/components/Sidebar';
 import Topbar from '@/components/Topbar';
 import OrderAlertToast from '@/components/OrderAlertToast';
 import { getStoredToken, parseStaffToken, StaffPayload } from '@/lib/auth';
+import { apiFetch } from '@/lib/api-client';
 
 export default function ProtectedLayout({
   children,
@@ -31,6 +32,18 @@ export default function ProtectedLayout({
     const token = getStoredToken();
     if (token) {
       syncStaffState(token);
+
+      // Fetch fresh staff profile directly from Neon Postgres database
+      apiFetch<{ staff: StaffPayload }>('/api/auth/me')
+        .then((res) => {
+          if (res?.staff) {
+            setStaff(res.staff);
+            if (res.staff.role === 'outlet_admin' && res.staff.outletId) {
+              setSelectedOutletId(res.staff.outletId);
+            }
+          }
+        })
+        .catch(() => null);
 
       // Re-sync HttpOnly session cookie on client mount to ensure server middleware stays 100% in sync
       fetch('/api/set-session', {

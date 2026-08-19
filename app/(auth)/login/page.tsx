@@ -230,7 +230,7 @@ export default function LoginPage() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="alfiyyah@gmail.com"
+                  placeholder="admin@ercoffeelab.com"
                   className="w-full pl-11 pr-4 py-3 bg-white border border-[#E7E8F0] rounded-xl text-sm text-[#1E202B] placeholder-[#A0A5BD] focus:outline-none focus:border-[#C9A876] focus:ring-2 focus:ring-[#C9A876]/20 transition shadow-xs"
                   required
                 />

@@ -365,11 +365,11 @@ export default function Topbar({
             className="flex items-center gap-3 p-1.5 pr-3 rounded-xl hover:bg-[#F4F5F9] transition border border-transparent hover:border-[#E7E8F0] cursor-pointer"
           >
             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#181F4B] to-[#3B4B8C] text-[#C9A876] flex items-center justify-center font-bold font-albert text-xs shadow-xs">
-              {staff?.fullName?.charAt(0)?.toUpperCase() || 'A'}
+              {staff?.fullName?.charAt(0)?.toUpperCase() || 'S'}
             </div>
             <div className="text-left hidden sm:block">
               <p className="text-xs font-bold font-albert text-[#1E202B] leading-tight">
-                {staff?.fullName || 'Alfiyyah Admin'}
+                {staff?.fullName || 'Staff User'}
               </p>
               <p className="text-[10px] text-[#6B7088] capitalize">
                 {staff?.role === 'super_admin' ? 'Super Admin' : 'Outlet Admin'}

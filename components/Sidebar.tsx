@@ -141,7 +141,7 @@ export default function Sidebar({
             </div>
             <div className="overflow-hidden">
               <p className="text-sm font-bold font-albert text-white truncate leading-tight">
-                {staff?.fullName || 'Alfiyyah Admin'}
+                {staff?.fullName || 'Staff User'}
               </p>
               <p className="text-[11px] font-medium text-[#C9A876] truncate mt-0.5">
                 {staff?.role || 'super_admin'}
