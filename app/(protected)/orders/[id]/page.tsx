@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, use } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { apiFetch } from '@/lib/api-client';
+import { markOrderAsRead } from '@/lib/notifications';
 import {
   ArrowLeft,
   Coffee,
@@ -84,6 +85,9 @@ export default function OrderDetailPage({
     try {
       const data = await apiFetch<OrderDetailData>(`/api/orders/${orderId}`);
       setOrder(data);
+      if (data?.id) {
+        markOrderAsRead(data.id);
+      }
     } catch (err: any) {
       setError(err?.message || 'Gagal memuat detail pesanan');
     } finally {

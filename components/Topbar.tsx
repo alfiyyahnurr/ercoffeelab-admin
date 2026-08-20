@@ -20,7 +20,14 @@ import {
   CheckCircle2,
   Clock,
   X,
+  CheckCheck,
+  Check,
 } from 'lucide-react';
+import {
+  getReadOrderIds,
+  markOrderAsRead,
+  markAllOrdersAsRead,
+} from '@/lib/notifications';
 
 export interface OutletOption {
   id: number;
@@ -69,6 +76,20 @@ export default function Topbar({
   const [recentOrdersNotif, setRecentOrdersNotif] = useState<OrderNotifItem[]>([]);
   const [loadingNotif, setLoadingNotif] = useState(false);
   const [hasUnreadNotif, setHasUnreadNotif] = useState(false);
+  const [readOrderIds, setReadOrderIds] = useState<Array<number | string>>([]);
+
+  const syncReadStatus = useCallback(() => {
+    const list = getReadOrderIds();
+    setReadOrderIds(list);
+  }, []);
+
+  useEffect(() => {
+    syncReadStatus();
+    window.addEventListener('ercoffeelab_read_orders_updated', syncReadStatus);
+    return () => {
+      window.removeEventListener('ercoffeelab_read_orders_updated', syncReadStatus);
+    };
+  }, [syncReadStatus]);
 
   const isSuperAdmin = staff?.role === 'super_admin';
 
@@ -121,12 +142,13 @@ export default function Topbar({
       const sliced = list.slice(0, 5);
       setRecentOrdersNotif(sliced);
 
-      // Show red dot badge only if there are orders present
-      if (sliced.length > 0) {
-        setHasUnreadNotif(true);
-      } else {
-        setHasUnreadNotif(false);
-      }
+      // Check unread count based on readOrderIds in localStorage
+      const currentReadIds = getReadOrderIds();
+      const unreadCount = sliced.filter(
+        (ord) => !currentReadIds.some((readId) => String(readId) === String(ord.id))
+      ).length;
+
+      setHasUnreadNotif(unreadCount > 0);
     } catch {
       setRecentOrdersNotif([]);
       setHasUnreadNotif(false);
@@ -241,11 +263,7 @@ export default function Topbar({
         <div className="relative">
           <button
             onClick={() => {
-              setShowNotifMenu((prev) => {
-                const next = !prev;
-                if (next) setHasUnreadNotif(false);
-                return next;
-              });
+              setShowNotifMenu((prev) => !prev);
               setShowProfileMenu(false);
             }}
             className="relative p-2 rounded-xl text-[#6B7088] hover:text-[#181F4B] hover:bg-[#F4F5F9] transition cursor-pointer"
@@ -253,29 +271,46 @@ export default function Topbar({
           >
             <Bell className="w-5 h-5" />
             {hasUnreadNotif && recentOrdersNotif.length > 0 && (
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#C9576B] ring-2 ring-white" />
+              <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full bg-[#C9576B] ring-2 ring-white animate-pulse" />
             )}
           </button>
 
           {/* Notification Popover Dropdown */}
           {showNotifMenu && (
             <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white border border-[#E7E8F0] rounded-2xl shadow-2xl py-3 z-50 animate-in fade-in slide-in-from-top-2">
-              <div className="px-4 pb-3 border-b border-[#E7E8F0] flex items-center justify-between">
+              <div className="px-4 pb-3 border-b border-[#E7E8F0] flex items-center justify-between gap-2">
                 <div>
                   <h3 className="font-bold text-xs uppercase tracking-wider font-albert text-[#181F4B] flex items-center gap-1.5">
                     <ShoppingBag className="w-4 h-4 text-[#C9A876]" />
                     Notifikasi Transaksi Baru
                   </h3>
-                  <p className="text-[10px] text-[#6B7088] mt-0.5 truncate max-w-[240px]">
+                  <p className="text-[10px] text-[#6B7088] mt-0.5 truncate max-w-[200px]">
                     Cakupan: <strong className="text-[#181F4B]">{activeOutletName}</strong>
                   </p>
                 </div>
-                <button
-                  onClick={() => setShowNotifMenu(false)}
-                  className="p-1 text-[#6B7088] hover:text-[#181F4B]"
-                >
-                  <X className="w-4 h-4" />
-                </button>
+
+                <div className="flex items-center gap-2">
+                  {recentOrdersNotif.length > 0 && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        markAllOrdersAsRead(recentOrdersNotif.map((o) => o.id));
+                      }}
+                      className="text-[11px] font-semibold text-[#3B4B8C] hover:text-[#181F4B] flex items-center gap-1 hover:underline cursor-pointer py-1 px-2 bg-[#EDF0FA] rounded-lg transition"
+                      title="Tandai semua sebagai dibaca"
+                    >
+                      <CheckCheck className="w-3.5 h-3.5 text-[#3B4B8C]" />
+                      <span className="hidden sm:inline">Tandai Semua</span>
+                    </button>
+                  )}
+
+                  <button
+                    onClick={() => setShowNotifMenu(false)}
+                    className="p-1 text-[#6B7088] hover:text-[#181F4B] cursor-pointer"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
 
               {/* Notification List Body */}
@@ -286,49 +321,82 @@ export default function Topbar({
                     <span>Memuat transaksi terbaru...</span>
                   </div>
                 ) : recentOrdersNotif.length > 0 ? (
-                  recentOrdersNotif.map((ord) => (
-                    <div
-                      key={ord.id}
-                      onClick={() => {
-                        setShowNotifMenu(false);
-                        router.push(`/orders/${ord.id}`);
-                      }}
-                      className="p-3.5 hover:bg-[#F6F3EC] transition cursor-pointer flex items-start gap-3"
-                    >
-                      <div className="w-8 h-8 rounded-xl bg-[#F4F5F9] border border-[#E7E8F0] flex items-center justify-center text-[#181F4B] shrink-0 mt-0.5">
-                        <ShoppingBag className="w-4 h-4 text-[#C9A876]" />
-                      </div>
+                  recentOrdersNotif.map((ord) => {
+                    const isRead = readOrderIds.some(
+                      (rId) => String(rId) === String(ord.id)
+                    );
+                    return (
+                      <div
+                        key={ord.id}
+                        onClick={() => {
+                          markOrderAsRead(ord.id);
+                          setShowNotifMenu(false);
+                          router.push(`/orders/${ord.id}`);
+                        }}
+                        className={`p-3.5 transition cursor-pointer flex items-start gap-3 relative ${
+                          isRead ? 'hover:bg-[#F6F3EC] bg-white opacity-85' : 'bg-[#F6F3EC]/50 hover:bg-[#F6F3EC]'
+                        }`}
+                      >
+                        {!isRead && (
+                          <span className="w-2 h-2 rounded-full bg-[#3B4B8C] absolute left-1.5 top-5" />
+                        )}
 
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-2">
-                          <p className="font-mono font-bold text-xs text-[#181F4B] truncate">
-                            #{ord.orderNumber}
+                        <div className="w-8 h-8 rounded-xl bg-[#F4F5F9] border border-[#E7E8F0] flex items-center justify-center text-[#181F4B] shrink-0 mt-0.5">
+                          <ShoppingBag className="w-4 h-4 text-[#C9A876]" />
+                        </div>
+
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="font-mono font-bold text-xs text-[#181F4B] truncate">
+                              #{ord.orderNumber}
+                            </p>
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#EAF5EE] text-[#3E8A5A] uppercase shrink-0">
+                              {ord.orderStatus}
+                            </span>
+                          </div>
+
+                          <p className="text-[11px] text-[#6B7088] mt-0.5 truncate">
+                            {ord.customerName || 'Pelanggan Walk-in'} •{' '}
+                            <strong className="text-[#181F4B]">
+                              Rp {ord.total.toLocaleString('id-ID')}
+                            </strong>
                           </p>
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#EAF5EE] text-[#3E8A5A] uppercase shrink-0">
-                            {ord.orderStatus}
-                          </span>
-                        </div>
 
-                        <p className="text-[11px] text-[#6B7088] mt-0.5 truncate">
-                          {ord.customerName || 'Pelanggan Walk-in'} •{' '}
-                          <strong className="text-[#181F4B]">
-                            Rp {ord.total.toLocaleString('id-ID')}
-                          </strong>
-                        </p>
+                          <div className="flex items-center justify-between gap-2 mt-1.5">
+                            <div className="flex items-center gap-1.5 text-[10px] text-[#6B7088]">
+                              <Clock className="w-3 h-3 text-[#C9A876]" />
+                              <span>{new Date(ord.createdAt).toLocaleTimeString('id-ID')}</span>
+                              {ord.outletName && (
+                                <>
+                                  <span>•</span>
+                                  <span className="truncate max-w-[100px]">{ord.outletName}</span>
+                                </>
+                              )}
+                            </div>
 
-                        <div className="flex items-center gap-2 mt-1 text-[10px] text-[#6B7088]">
-                          <Clock className="w-3 h-3 text-[#C9A876]" />
-                          <span>{new Date(ord.createdAt).toLocaleTimeString('id-ID')}</span>
-                          {ord.outletName && (
-                            <>
-                              <span>•</span>
-                              <span className="truncate">{ord.outletName}</span>
-                            </>
-                          )}
+                            {!isRead ? (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  markOrderAsRead(ord.id);
+                                }}
+                                className="text-[10px] font-semibold text-[#3B4B8C] hover:text-[#181F4B] flex items-center gap-0.5 bg-white border border-[#E7E8F0] px-1.5 py-0.5 rounded shadow-2xs hover:border-[#C9A876] transition"
+                                title="Tandai dibaca"
+                              >
+                                <Check className="w-3 h-3 text-[#3B4B8C]" />
+                                <span>Tandai Dibaca</span>
+                              </button>
+                            ) : (
+                              <span className="text-[10px] text-[#A0A5BD] flex items-center gap-0.5">
+                                <Check className="w-3 h-3 text-[#3E8A5A]" />
+                                <span>Dibaca</span>
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))
+                    );
+                  })
                 ) : (
                   <div className="py-8 text-center text-[#6B7088] text-xs space-y-1">
                     <ShoppingBag className="w-6 h-6 text-[#E7E8F0] mx-auto mb-1" />

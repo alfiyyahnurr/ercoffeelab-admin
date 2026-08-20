@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiFetch } from '@/lib/api-client';
-import { Coffee, BellRing, X, ArrowRight } from 'lucide-react';
+import { getSeenAlertIds, markAlertAsSeen, markOrderAsRead } from '@/lib/notifications';
+import { BellRing, X, ArrowRight } from 'lucide-react';
 
 export interface OrderAlert {
   id: number | string;
@@ -55,6 +56,7 @@ const playAlertChime = () => {
 export default function OrderAlertToast({ outletId }: OrderAlertToastProps) {
   const router = useRouter();
   const [activeAlert, setActiveAlert] = useState<OrderAlert | null>(null);
+  const autoDismissTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const fetchOrderAlerts = useCallback(async () => {
     // Skip polling if document is hidden to save resources
@@ -86,29 +88,52 @@ export default function OrderAlertToast({ outletId }: OrderAlertToastProps) {
         };
       }
 
-      if (latestAlert && (!activeAlert || activeAlert.id !== latestAlert.id)) {
-        setActiveAlert(latestAlert);
-        playAlertChime();
+      if (latestAlert) {
+        const seenIds = getSeenAlertIds();
+        const strId = String(latestAlert.id);
+
+        // Check if this alert has NOT been shown yet
+        if (!seenIds.some((id) => String(id) === strId)) {
+          // Mark as seen immediately so it only pops up ONCE
+          markAlertAsSeen(latestAlert.id);
+          setActiveAlert(latestAlert);
+          playAlertChime();
+
+          // Auto-dismiss the toast popup after 5 seconds (5000ms)
+          if (autoDismissTimerRef.current) {
+            clearTimeout(autoDismissTimerRef.current);
+          }
+          autoDismissTimerRef.current = setTimeout(() => {
+            setActiveAlert(null);
+          }, 5000);
+        }
       }
     } catch {
       // Ignore background polling errors
     }
-  }, [outletId, activeAlert]);
+  }, [outletId]);
 
   useEffect(() => {
-    // Initial fetch after slight delay to let page finish rendering first
+    // Initial fetch after slight delay
     const timer = setTimeout(fetchOrderAlerts, 1500);
 
-    // Poll every 30 seconds to minimize dev server load
+    // Poll every 30 seconds for new incoming orders
     const interval = setInterval(fetchOrderAlerts, 30000);
     return () => {
       clearTimeout(timer);
       clearInterval(interval);
+      if (autoDismissTimerRef.current) {
+        clearTimeout(autoDismissTimerRef.current);
+      }
     };
   }, [fetchOrderAlerts]);
 
   const handleAcknowledgeAndNavigate = async () => {
     if (!activeAlert) return;
+
+    const targetId = activeAlert.orderId || activeAlert.id;
+    // Mark as read immediately when user clicks to view details
+    markOrderAsRead(targetId);
 
     try {
       if (activeAlert.outletId) {
@@ -118,7 +143,6 @@ export default function OrderAlertToast({ outletId }: OrderAlertToastProps) {
         }).catch(() => null);
       }
     } finally {
-      const targetId = activeAlert.orderId || activeAlert.id;
       setActiveAlert(null);
       router.push(`/orders/${targetId}`);
     }
