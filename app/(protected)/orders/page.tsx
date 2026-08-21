@@ -52,8 +52,10 @@ export default function OrdersPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
-  const fetchOrders = useCallback(async () => {
-    setLoading(true);
+  const fetchOrders = useCallback(async (isBackground = false) => {
+    if (!isBackground) {
+      setLoading(true);
+    }
     setError(null);
     try {
       const endpoint =
@@ -70,15 +72,26 @@ export default function OrdersPage() {
         setOrders([]);
       }
     } catch (err: any) {
-      setError(err?.message || 'Gagal memuat daftar pesanan');
+      if (!isBackground) {
+        setError(err?.message || 'Gagal memuat daftar pesanan');
+      }
     } finally {
-      setLoading(false);
+      if (!isBackground) {
+        setLoading(false);
+      }
     }
   }, [activeTab]);
 
   useEffect(() => {
-    fetchOrders();
+    fetchOrders(false);
     setCurrentPage(1);
+
+    // Auto background polling every 5 seconds for incoming orders
+    const timer = setInterval(() => {
+      fetchOrders(true);
+    }, 5000);
+
+    return () => clearInterval(timer);
   }, [fetchOrders]);
 
   const formatRupiah = (val: number) =>
@@ -155,7 +168,7 @@ export default function OrdersPage() {
         </div>
 
         <button
-          onClick={fetchOrders}
+          onClick={() => fetchOrders()}
           disabled={loading}
           className="inline-flex items-center gap-2 px-4 py-2 bg-white hover:bg-[#F6F3EC] border border-[#E7E8F0] hover:border-[#C9A876] rounded-xl text-xs font-semibold text-[#181F4B] transition-all duration-150 shadow-xs cursor-pointer disabled:opacity-50 hover:scale-[1.02] active:scale-[0.98]"
         >

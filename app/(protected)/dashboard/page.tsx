@@ -43,21 +43,34 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchDashboardStats = useCallback(async () => {
-    setLoading(true);
+  const fetchDashboardStats = useCallback(async (isBackground = false) => {
+    if (!isBackground) {
+      setLoading(true);
+    }
     setError(null);
     try {
       const data = await apiFetch<DashboardStats>('/api/dashboard/stats');
       setStats(data);
     } catch (err: any) {
-      setError(err?.message || 'Gagal memuat statistik dashboard');
+      if (!isBackground) {
+        setError(err?.message || 'Gagal memuat statistik dashboard');
+      }
     } finally {
-      setLoading(false);
+      if (!isBackground) {
+        setLoading(false);
+      }
     }
   }, []);
 
   useEffect(() => {
-    fetchDashboardStats();
+    fetchDashboardStats(false);
+
+    // Auto background polling every 5 seconds for live dashboard updates
+    const timer = setInterval(() => {
+      fetchDashboardStats(true);
+    }, 5000);
+
+    return () => clearInterval(timer);
   }, [fetchDashboardStats]);
 
   const formatRupiah = (val: number) =>
@@ -101,7 +114,7 @@ export default function DashboardPage() {
         </div>
 
         <button
-          onClick={fetchDashboardStats}
+          onClick={() => fetchDashboardStats()}
           disabled={loading}
           className="inline-flex items-center gap-2 px-4 py-2 bg-white hover:bg-[#F6F3EC] border border-[#E7E8F0] rounded-xl text-xs font-semibold text-[#181F4B] transition shadow-xs cursor-pointer self-start sm:self-auto disabled:opacity-50"
         >
