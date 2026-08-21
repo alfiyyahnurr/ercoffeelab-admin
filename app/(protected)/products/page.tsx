@@ -80,6 +80,8 @@ export default function MasterProductsPage() {
   const [formBasePrice, setFormBasePrice] = useState('');
   const [formDesc, setFormDesc] = useState('');
   const [formImageUrl, setFormImageUrl] = useState<string | null>(null);
+  const [formIsBestseller, setFormIsBestseller] = useState<boolean>(false);
+  const [formIsNew, setFormIsNew] = useState<boolean>(false);
   const [formAddons, setFormAddons] = useState<MasterAddon[]>([]);
   const [addonName, setAddonName] = useState('');
   const [addonPrice, setAddonPrice] = useState('');
@@ -118,7 +120,6 @@ export default function MasterProductsPage() {
 
   const fetchProducts = useCallback(async () => {
     setLoading(true);
-    setError(null);
     try {
       const res = await apiFetch<{ data: MasterProduct[] }>('/api/products');
       if (Array.isArray(res?.data)) {
@@ -149,6 +150,8 @@ export default function MasterProductsPage() {
     setFormBasePrice('');
     setFormDesc('');
     setFormImageUrl(null);
+    setFormIsBestseller(false);
+    setFormIsNew(false);
     setFormAddons([]);
     setAddonName('');
     setAddonPrice('');
@@ -165,6 +168,8 @@ export default function MasterProductsPage() {
     setFormBasePrice(String(p.basePrice));
     setFormDesc(p.description || '');
     setFormImageUrl(p.imageUrl || null);
+    setFormIsBestseller(Boolean(p.isBestseller));
+    setFormIsNew(Boolean(p.isNew));
     setFormAddons(p.addons ? [...p.addons] : []);
     setAddonName('');
     setAddonPrice('');
@@ -241,6 +246,8 @@ export default function MasterProductsPage() {
         Number(formBasePrice) === editingProduct.basePrice &&
         (formDesc.trim() || null) === (editingProduct.description || null) &&
         (formImageUrl || null) === (editingProduct.imageUrl || null) &&
+        formIsBestseller === Boolean(editingProduct.isBestseller) &&
+        formIsNew === Boolean(editingProduct.isNew) &&
         JSON.stringify(formAddons) === JSON.stringify(editingProduct.addons || []);
 
       if (isUnchanged) {
@@ -260,6 +267,8 @@ export default function MasterProductsPage() {
       basePrice: Number(formBasePrice),
       description: formDesc.trim() || null,
       imageUrl: formImageUrl || null,
+      isBestseller: formIsBestseller,
+      isNew: formIsNew,
       addons: formAddons,
     };
 
@@ -640,9 +649,21 @@ export default function MasterProductsPage() {
                                 )}
                               </div>
                               <div>
-                                <p className="font-bold text-[#181F4B] font-albert text-sm">
-                                  {product.name}
-                                </p>
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <p className="font-bold text-[#181F4B] font-albert text-sm">
+                                    {product.name}
+                                  </p>
+                                  {product.isBestseller && (
+                                    <span className="bg-[#181F4B] text-[#C9A876] text-[9px] font-extrabold px-1.5 py-0.5 rounded tracking-wide">
+                                      BEST SELLER
+                                    </span>
+                                  )}
+                                  {product.isNew && (
+                                    <span className="bg-[#C9576B] text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded tracking-wide">
+                                      BARU
+                                    </span>
+                                  )}
+                                </div>
                                 {product.description && (
                                   <p className="text-xs text-[#6B7088] line-clamp-1">
                                     {product.description}
@@ -945,6 +966,41 @@ export default function MasterProductsPage() {
                   rows={2}
                   className="w-full px-3.5 py-2 bg-[#F4F5F9] border border-[#E7E8F0] rounded-xl text-xs text-[#1E202B] focus:outline-none"
                 />
+              </div>
+
+              {/* Status Label Section (Best Seller / New / Normal) */}
+              <div>
+                <label className="block text-xs font-semibold text-[#6B7088] mb-1.5">
+                  Label Status Produk (Opsional)
+                </label>
+                <div className="flex items-center gap-4 bg-[#F4F5F9] p-3 rounded-xl border border-[#E7E8F0]">
+                  <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-[#181F4B]">
+                    <input
+                      type="checkbox"
+                      checked={formIsBestseller}
+                      onChange={(e) => setFormIsBestseller(e.target.checked)}
+                      className="w-4 h-4 rounded text-[#181F4B] focus:ring-[#C9A876] cursor-pointer"
+                    />
+                    <span className="bg-[#181F4B] text-[#C9A876] text-[10px] font-extrabold px-2 py-0.5 rounded tracking-wider">
+                      BEST SELLER
+                    </span>
+                  </label>
+
+                  <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-[#181F4B]">
+                    <input
+                      type="checkbox"
+                      checked={formIsNew}
+                      onChange={(e) => setFormIsNew(e.target.checked)}
+                      className="w-4 h-4 rounded text-[#C9576B] focus:ring-[#C9576B] cursor-pointer"
+                    />
+                    <span className="bg-[#C9576B] text-white text-[10px] font-extrabold px-2 py-0.5 rounded tracking-wider">
+                      BARU (NEW)
+                    </span>
+                  </label>
+                </div>
+                <p className="text-[11px] text-[#6B7088] mt-1">
+                  *Bisa mencentang salah satu, keduanya, atau dikosongkan (untuk produk biasa).
+                </p>
               </div>
 
               {/* Addons Manager Section */}
