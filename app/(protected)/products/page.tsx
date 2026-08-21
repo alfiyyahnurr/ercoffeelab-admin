@@ -215,6 +215,11 @@ export default function MasterProductsPage() {
     }
   };
 
+  const handleRemoveImage = () => {
+    setFormImageUrl(null);
+    setInfoMessage('Foto produk telah dibatalkan / dihapus.');
+  };
+
   const handleAddAddon = () => {
     if (!addonName.trim() || !addonPrice) return;
     setFormAddons((prev) => [
@@ -925,10 +930,10 @@ export default function MasterProductsPage() {
 
               <div>
                 <label className="block text-xs font-semibold text-[#6B7088] mb-1">
-                  Unggah foto produk menu
+                  Foto Produk Menu
                 </label>
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-[#F6F3EC] border border-[#E7E8F0] overflow-hidden shrink-0 flex items-center justify-center">
+                  <div className="w-14 h-14 rounded-2xl bg-[#F6F3EC] border border-[#E7E8F0] overflow-hidden shrink-0 flex items-center justify-center relative group shadow-xs">
                     {formImageUrl && getImageUrl(formImageUrl) ? (
                       <img
                         src={getImageUrl(formImageUrl) || undefined}
@@ -936,23 +941,49 @@ export default function MasterProductsPage() {
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <ImageIcon className="w-5 h-5 text-[#6B7088]" />
+                      <ImageIcon className="w-6 h-6 text-[#9AA0A6]" />
                     )}
                   </div>
-                  <label className="flex-1 cursor-pointer">
-                    <span className="px-3.5 py-2 bg-[#F4F5F9] hover:bg-[#E7E8F0] border border-[#E7E8F0] rounded-xl text-xs font-semibold text-[#181F4B] inline-flex items-center gap-2 transition">
-                      <Upload className="w-3.5 h-3.5 text-[#C9A876]" />
-                      {uploading ? 'Mengunggah...' : 'Pilih File Gambar (Max 5MB)'}
-                    </span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageFileChange}
-                      className="hidden"
-                      disabled={uploading}
-                    />
-                  </label>
+
+                  <div className="flex-1 flex flex-wrap items-center gap-2">
+                    <label className="cursor-pointer">
+                      <span className="px-3.5 py-2 bg-[#F4F5F9] hover:bg-[#E7E8F0] border border-[#E7E8F0] rounded-xl text-xs font-semibold text-[#181F4B] inline-flex items-center gap-2 transition cursor-pointer">
+                        <Upload className="w-3.5 h-3.5 text-[#C9A876]" />
+                        {uploading ? 'Mengunggah...' : formImageUrl ? 'Ganti Foto' : 'Pilih File Gambar (Max 5MB)'}
+                      </span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageFileChange}
+                        className="hidden"
+                        disabled={uploading}
+                      />
+                    </label>
+
+                    {formImageUrl && (
+                      <button
+                        type="button"
+                        onClick={handleRemoveImage}
+                        disabled={uploading}
+                        className="px-3 py-2 bg-[#FDF0F2] hover:bg-[#FAF1F3] border border-[#FAD4DB] rounded-xl text-xs font-bold text-[#C9576B] inline-flex items-center gap-1.5 transition cursor-pointer"
+                        title="Hapus / Batal upload foto produk ini"
+                      >
+                        <Trash2 className="w-3.5 h-3.5 text-[#C9576B]" />
+                        <span>Hapus Foto</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
+                {formImageUrl ? (
+                  <p className="text-[11px] text-[#3E8A5A] font-semibold mt-1.5 flex items-center gap-1">
+                    <CheckCircle2 className="w-3 h-3 text-[#3E8A5A]" />
+                    <span>Foto produk terpasang. Klik "Hapus Foto" jika ingin mengosongkan foto produk.</span>
+                  </p>
+                ) : (
+                  <p className="text-[11px] text-[#6B7088] mt-1.5">
+                    *Format gambar disarankan JPG, PNG, atau WebP (Maksimal 5MB).
+                  </p>
+                )}
               </div>
 
               <div>
