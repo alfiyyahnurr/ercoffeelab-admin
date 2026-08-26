@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { StaffPayload, removeStoredToken } from '@/lib/auth';
+import { StaffPayload, removeStoredToken, getStoredRole } from '@/lib/auth';
 import {
   LayoutDashboard,
   Coffee,
@@ -99,7 +99,8 @@ export default function Sidebar({
   staff,
 }: SidebarProps) {
   const pathname = usePathname();
-  const isSuperAdmin = staff?.role === 'super_admin';
+  const role = staff?.role || getStoredRole();
+  const isSuperAdmin = role === 'super_admin';
 
   const visibleMenuItems = MENU_ITEMS.filter(
     (item) => !item.superAdminOnly || isSuperAdmin

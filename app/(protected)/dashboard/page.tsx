@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { apiFetch } from '@/lib/api-client';
 import { useOutletContext } from '@/context/OutletContext';
+import { getStoredRole } from '@/lib/auth';
 import {
   TrendingUp,
   ShoppingBag,
@@ -53,6 +54,7 @@ export default function DashboardPage() {
     isSuperAdmin,
     activeOutletName,
   } = useOutletContext();
+  const activeRole = staff?.role || getStoredRole();
 
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -117,16 +119,18 @@ export default function DashboardPage() {
             </h1>
 
             {/* Active Outlet Scope Badge */}
-            {staff?.role === 'super_admin' ? (
+            {activeRole === 'super_admin' ? (
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#F6F3EC] border border-[#C9A876]/40 text-xs font-bold text-[#181F4B] font-albert shadow-xs">
                 <Globe className="w-3.5 h-3.5 text-[#C9A876]" />
                 <span>{selectedOutletId ? activeOutletName : 'Global Overview'}</span>
               </span>
-            ) : (
+            ) : activeRole === 'outlet_admin' ? (
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#EDF0FA] border border-[#D2D9F3] text-xs font-bold text-[#3B4B8C] font-albert shadow-xs">
                 <Store className="w-3.5 h-3.5 text-[#3B4B8C]" />
                 <span>Cabang Aktif: {activeOutletName}</span>
               </span>
+            ) : (
+              <div className="h-6 w-32 bg-[#F4F5F9] animate-pulse rounded-lg" />
             )}
           </div>
 
@@ -137,7 +141,7 @@ export default function DashboardPage() {
 
         {/* Action Controls: Outlet Selector for Super Admin & Refresh Button */}
         <div className="flex flex-wrap items-center gap-3">
-          {isSuperAdmin && (
+          {activeRole === 'super_admin' && (
             <div className="relative flex items-center">
               <Store className="w-4 h-4 absolute left-3 text-[#C9A876] pointer-events-none" />
               <select

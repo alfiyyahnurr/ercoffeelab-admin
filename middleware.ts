@@ -122,7 +122,15 @@ export function middleware(request: NextRequest) {
     }
   }
 
-  return NextResponse.next();
+  const response = NextResponse.next();
+  if (payload) {
+    response.cookies.set('ercoffeelab_role', payload.role, {
+      path: '/',
+      httpOnly: false,
+      sameSite: 'lax',
+    });
+  }
+  return response;
 }
 
 export const config = {

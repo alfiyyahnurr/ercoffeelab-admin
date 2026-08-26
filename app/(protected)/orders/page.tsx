@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { apiFetch } from '@/lib/api-client';
 import { useOutletContext } from '@/context/OutletContext';
+import { getStoredRole } from '@/lib/auth';
 import Pagination from '@/components/Pagination';
 import {
   Coffee,
@@ -51,6 +52,7 @@ export default function OrdersPage() {
     isSuperAdmin,
     activeOutletName,
   } = useOutletContext();
+  const activeRole = staff?.role || getStoredRole();
 
   const [orders, setOrders] = useState<OrderItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -179,16 +181,18 @@ export default function OrdersPage() {
             </h1>
 
             {/* Active Outlet Scope Badge */}
-            {!isSuperAdmin ? (
+            {activeRole === 'super_admin' ? (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#F6F3EC] border border-[#C9A876]/40 text-xs font-bold text-[#181F4B] font-albert shadow-xs">
+                <Globe className="w-3.5 h-3.5 text-[#C9A876]" />
+                <span>{activeOutletName}</span>
+              </span>
+            ) : activeRole === 'outlet_admin' ? (
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#EDF0FA] border border-[#D2D9F3] text-xs font-bold text-[#3B4B8C] font-albert shadow-xs">
                 <Store className="w-3.5 h-3.5 text-[#3B4B8C]" />
                 <span>Cabang Aktif: {activeOutletName}</span>
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#F6F3EC] border border-[#C9A876]/40 text-xs font-bold text-[#181F4B] font-albert shadow-xs">
-                <Globe className="w-3.5 h-3.5 text-[#C9A876]" />
-                <span>{activeOutletName}</span>
-              </span>
+              <div className="h-6 w-32 bg-[#F4F5F9] animate-pulse rounded-lg" />
             )}
           </div>
 

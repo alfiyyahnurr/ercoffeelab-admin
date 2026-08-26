@@ -33,7 +33,34 @@ export function setStoredToken(token: string): void {
 export function removeStoredToken(): void {
   if (typeof window !== 'undefined') {
     localStorage.removeItem(TOKEN_KEY);
+    document.cookie = 'ercoffeelab_role=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
   }
+}
+
+/**
+ * Synchronously retrieves stored staff role from cookies or localStorage (client-side).
+ */
+export function getStoredRole(): 'super_admin' | 'outlet_admin' | null {
+  if (typeof window === 'undefined') return null;
+
+  try {
+    const cookies = document.cookie.split('; ');
+    const roleCookie = cookies.find((c) => c.startsWith('ercoffeelab_role='));
+    if (roleCookie) {
+      const val = roleCookie.split('=')[1];
+      if (val === 'super_admin' || val === 'outlet_admin') return val;
+    }
+  } catch {
+    // Ignore cookie read error
+  }
+
+  const token = getStoredToken();
+  if (token) {
+    const parsed = parseStaffToken(token);
+    return parsed?.role ?? null;
+  }
+
+  return null;
 }
 
 /**
