@@ -18,6 +18,7 @@ interface OutletContextType {
   outlets: OutletOption[];
   isSuperAdmin: boolean;
   activeOutletName: string;
+  isLoaded: boolean;
 }
 
 const OutletContext = createContext<OutletContextType>({
@@ -25,8 +26,9 @@ const OutletContext = createContext<OutletContextType>({
   selectedOutletId: null,
   setSelectedOutletId: () => {},
   outlets: [],
-  isSuperAdmin: true,
-  activeOutletName: 'Semua Outlet (Global)',
+  isSuperAdmin: false,
+  activeOutletName: 'Memuat Outlet...',
+  isLoaded: false,
 });
 
 let cachedOutlets: OutletOption[] | null = null;
@@ -55,10 +57,12 @@ export function OutletProvider({ children }: { children: React.ReactNode }) {
 
   const [outlets, setOutlets] = useState<OutletOption[]>(cachedOutlets || []);
 
+  const [isLoaded, setIsLoaded] = useState(false);
   const isSuperAdmin = staff?.role === 'super_admin';
 
   // Fetch list of outlets for switcher
   useEffect(() => {
+    setIsLoaded(true);
     if (cachedOutlets) {
       setOutlets(cachedOutlets);
       return;
@@ -133,6 +137,7 @@ export function OutletProvider({ children }: { children: React.ReactNode }) {
         outlets,
         isSuperAdmin,
         activeOutletName,
+        isLoaded,
       }}
     >
       {children}

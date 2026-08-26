@@ -217,7 +217,7 @@ export default function Topbar({
         </Link>
 
         {/* Outlet Selector / Lock Badge */}
-        {isSuperAdmin ? (
+        {staff?.role === 'super_admin' ? (
           <div className="relative flex items-center">
             <Globe className="w-4 h-4 absolute left-3.5 text-[#C9A876] pointer-events-none" />
             <select
@@ -237,11 +237,13 @@ export default function Topbar({
             </select>
             <ChevronDown className="w-4 h-4 absolute right-3 text-[#6B7088] pointer-events-none" />
           </div>
-        ) : (
+        ) : staff?.role === 'outlet_admin' ? (
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-[#EDF0FA] border border-[#D2D9F3] text-xs font-semibold text-[#3B4B8C] font-albert shadow-xs">
             <Store className="w-4 h-4 text-[#3B4B8C]" />
             <span>{assignedOutlet.name}</span>
           </div>
+        ) : (
+          <div className="h-8 w-36" />
         )}
       </div>
 

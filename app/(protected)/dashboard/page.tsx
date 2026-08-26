@@ -117,15 +117,15 @@ export default function DashboardPage() {
             </h1>
 
             {/* Active Outlet Scope Badge */}
-            {!isSuperAdmin ? (
+            {staff?.role === 'super_admin' ? (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#F6F3EC] border border-[#C9A876]/40 text-xs font-bold text-[#181F4B] font-albert shadow-xs">
+                <Globe className="w-3.5 h-3.5 text-[#C9A876]" />
+                <span>{selectedOutletId ? activeOutletName : 'Global Overview'}</span>
+              </span>
+            ) : (
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#EDF0FA] border border-[#D2D9F3] text-xs font-bold text-[#3B4B8C] font-albert shadow-xs">
                 <Store className="w-3.5 h-3.5 text-[#3B4B8C]" />
                 <span>Cabang Aktif: {activeOutletName}</span>
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#F6F3EC] border border-[#C9A876]/40 text-xs font-bold text-[#181F4B] font-albert shadow-xs">
-                <Globe className="w-3.5 h-3.5 text-[#C9A876]" />
-                <span>Global Overview</span>
               </span>
             )}
           </div>
@@ -273,22 +273,28 @@ export default function DashboardPage() {
           </div>
 
           {/* Visual Trend Bars */}
-          <div className="h-56 flex items-end justify-between gap-3 pt-6 border-b border-[#E7E8F0] pb-2">
+          <div className="h-56 flex items-end justify-between gap-2 pt-6 border-b border-[#E7E8F0] pb-2">
             {stats?.dailySalesTrend && stats.dailySalesTrend.length > 0 ? (
               stats.dailySalesTrend.map((item, idx) => {
                 const maxRev = Math.max(...stats.dailySalesTrend.map((d) => d.revenue), 1);
-                const heightPercent = Math.max(12, Math.round((item.revenue / maxRev) * 100));
+                const heightPercent = item.revenue > 0
+                  ? Math.max(12, Math.round((item.revenue / maxRev) * 100))
+                  : 3;
 
                 return (
-                  <div key={idx} className="flex-1 flex flex-col items-center gap-2 group relative">
+                  <div key={idx} className="flex-1 h-full flex flex-col items-center justify-end gap-2 group relative">
                     {/* Hover Tooltip */}
                     <div className="absolute -top-10 opacity-0 group-hover:opacity-100 transition bg-[#0E1230] text-white text-[10px] py-1 px-2 rounded shadow-lg pointer-events-none whitespace-nowrap z-10">
                       {formatRupiah(item.revenue)} ({item.orders} order)
                     </div>
 
-                    <div className="w-full max-w-[40px] bg-[#F6F3EC] group-hover:bg-[#C9A876]/30 rounded-t-xl overflow-hidden flex items-end h-full transition">
+                    <div className="w-full max-w-[36px] bg-[#F6F3EC] group-hover:bg-[#C9A876]/20 rounded-t-xl overflow-hidden flex items-end h-40 transition">
                       <div
-                        className="w-full bg-gradient-to-t from-[#181F4B] to-[#3B4B8C] group-hover:from-[#C9A876] group-hover:to-[#b3915f] rounded-t-xl transition-all duration-500"
+                        className={`w-full rounded-t-xl transition-all duration-500 ${
+                          item.revenue > 0
+                            ? 'bg-gradient-to-t from-[#181F4B] to-[#3B4B8C] group-hover:from-[#C9A876] group-hover:to-[#b3915f]'
+                            : 'bg-[#E7E8F0]'
+                        }`}
                         style={{ height: `${heightPercent}%` }}
                       />
                     </div>
