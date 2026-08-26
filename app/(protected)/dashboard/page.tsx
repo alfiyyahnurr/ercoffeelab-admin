@@ -351,17 +351,21 @@ export default function DashboardPage() {
 
                   return (
                     <div key={idx} className="flex-1 h-full flex flex-col items-center justify-end group relative z-10">
-                      {/* Overall Tooltip */}
-                      <div className="absolute -top-14 opacity-0 group-hover:opacity-100 transition duration-200 bg-[#0E1230] text-white text-[10px] py-1.5 px-2.5 rounded-lg shadow-2xl pointer-events-none whitespace-nowrap z-30 flex flex-col items-center">
-                        <p className="font-bold text-white">{item.displayLabel || item.date}</p>
-                        <p className="text-[#C9A876] font-mono font-bold mt-0.5">Total Omset: {formatRupiah(revVal)} ({item.orders} order)</p>
+                      {/* Prominent Hover Nominal Badge appearing above bar on hover */}
+                      <div className="absolute -top-12 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 group-hover:-translate-y-1 transition-all duration-200 bg-[#0E1230] border border-[#C9A876]/40 text-white text-[11px] font-bold font-mono px-3 py-1 rounded-xl shadow-xl pointer-events-none whitespace-nowrap z-30 flex items-center gap-1.5">
+                        <span className="text-[#C9A876]">{formatRupiah(revVal)}</span>
+                        {item.orders > 0 && (
+                          <span className="text-[#A0A5BD] text-[10px] font-normal font-source">
+                            ({item.orders} order)
+                          </span>
+                        )}
                       </div>
 
                       {/* Single Bar Column with Theme Color Gradient */}
-                      <div className="w-full max-w-[36px] flex flex-col justify-end h-48 relative group/bar">
-                        {/* Hover Nominal Text directly above bar */}
+                      <div className="w-full max-w-[36px] flex flex-col justify-end h-48 relative">
+                        {/* Always show short nominal label on hover directly above bar */}
                         {revVal > 0 && (
-                          <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-[9px] font-bold font-mono text-[#181F4B] opacity-0 group-hover/bar:opacity-100 transition whitespace-nowrap z-20">
+                          <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-[10px] font-bold font-mono text-[#181F4B] opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-20">
                             {formatShortRupiah(revVal)}
                           </span>
                         )}
@@ -369,14 +373,14 @@ export default function DashboardPage() {
                         {/* Render bar ONLY if height > 0 (completely empty when 0 data!) */}
                         {heightPercent > 0 && (
                           <div
-                            className="w-full rounded-t-xl bg-gradient-to-t from-[#181F4B] to-[#3B4B8C] group-hover:from-[#C9A876] group-hover:to-[#b3915f] transition-all duration-500 shadow-2xs"
+                            className="w-full rounded-t-xl bg-gradient-to-t from-[#181F4B] to-[#3B4B8C] group-hover:from-[#C9A876] group-hover:to-[#b3915f] group-hover:shadow-md transition-all duration-300"
                             style={{ height: `${heightPercent}%` }}
                           />
                         )}
                       </div>
 
                       {/* X-Axis Label */}
-                      <span className="text-[11px] font-medium text-[#6B7088] mt-2 font-source truncate max-w-[60px] text-center">
+                      <span className="text-[11px] font-medium text-[#6B7088] mt-2 font-source truncate max-w-[60px] text-center group-hover:text-[#181F4B] group-hover:font-bold transition">
                         {item.displayLabel || item.date?.slice(5)}
                       </span>
                     </div>
