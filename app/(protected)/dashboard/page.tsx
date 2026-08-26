@@ -19,7 +19,6 @@ import {
   Store,
   Globe,
   ChevronDown,
-  Calendar,
 } from 'lucide-react';
 
 interface TrendItem {
@@ -27,10 +26,6 @@ interface TrendItem {
   displayLabel?: string;
   revenue: number;
   orders: number;
-  coffeeRevenue?: number;
-  nonCoffeeRevenue?: number;
-  foodRevenue?: number;
-  otherRevenue?: number;
 }
 
 interface DashboardStats {
@@ -52,13 +47,6 @@ interface DashboardStats {
   activeOutletId?: number | null;
   activeOutletName?: string | null;
 }
-
-const CATEGORY_COLORS = [
-  { key: 'coffee', label: 'Espresso Based', color: 'bg-[#0D8A73]', hex: '#0D8A73' },
-  { key: 'nonCoffee', label: 'Non-Coffee', color: 'bg-[#10B981]', hex: '#10B981' },
-  { key: 'food', label: 'Pastry & Food', color: 'bg-[#4F46E5]', hex: '#4F46E5' },
-  { key: 'other', label: 'Penerimaan Lainnya', color: 'bg-[#F59E0B]', hex: '#F59E0B' },
-];
 
 export default function DashboardPage() {
   const {
@@ -137,16 +125,7 @@ export default function DashboardPage() {
 
   // Compute dynamic Y-Axis scale for chart grid
   const trendList = stats?.dailySalesTrend || [];
-  const maxRevenue = Math.max(
-    ...trendList.flatMap((item) => [
-      item.revenue,
-      item.coffeeRevenue || 0,
-      item.nonCoffeeRevenue || 0,
-      item.foodRevenue || 0,
-      item.otherRevenue || 0,
-    ]),
-    100000
-  );
+  const maxRevenue = Math.max(...trendList.map((item) => item.revenue), 100000);
 
   // Generate 5 Y-Axis tick steps
   const yTicks = [
@@ -247,7 +226,7 @@ export default function DashboardPage() {
           </div>
           <p className="text-[11px] text-[#6B7088] mt-1.5 flex items-center gap-1">
             <CheckCircle2 className="w-3.5 h-3.5 text-green" />
-            <span>Pendapatan terverifikasi ({activeOutletName})</span>
+            <span>Pesanan lunas & selesai ({activeOutletName})</span>
           </p>
         </div>
 
@@ -265,7 +244,7 @@ export default function DashboardPage() {
             {stats?.todayOrders || 0} <span className="text-xs font-normal text-[#6B7088]">pesanan</span>
           </div>
           <p className="text-[11px] text-[#6B7088] mt-1.5">
-            Akumulasi transaksi hari ini
+            Akumulasi transaksi selesai hari ini
           </p>
         </div>
 
@@ -309,15 +288,15 @@ export default function DashboardPage() {
       {/* Main Grid: Time Performance Tracker & Quick Recent Orders */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Time Performance Tracker Chart (2 cols) */}
-        <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-[#E7E8F0] shadow-xs flex flex-col justify-between min-h-[460px] max-h-[520px]">
+        <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-[#E7E8F0] shadow-xs flex flex-col justify-between min-h-[440px] max-h-[500px]">
           {/* Tracker Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
             <div>
               <h2 className="text-lg font-bold font-albert text-[#181F4B]">
                 Time Performance Tracker
               </h2>
               <p className="text-xs text-[#6B7088] mt-0.5">
-                Mode {appliedRange === 'daily' ? 'harian (7 hari)' : appliedRange === 'weekly' ? 'mingguan (4 minggu)' : appliedRange === 'monthly' ? 'bulanan (12 bulan)' : 'tahunan (5 tahun)'}: statistik omset per kategori + total omset ({activeOutletName}).
+                Mode {appliedRange === 'daily' ? 'harian (7 hari)' : appliedRange === 'weekly' ? 'mingguan (4 minggu)' : appliedRange === 'monthly' ? 'bulanan (12 bulan)' : 'tahunan (5 tahun)'}: statistik omset pendapatan keseluruhan ({activeOutletName}).
               </p>
             </div>
 
@@ -347,17 +326,7 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Category Color Legends (Matching reference image) */}
-          <div className="flex flex-wrap items-center gap-4 mb-4 text-xs text-[#6B7088] font-medium">
-            {CATEGORY_COLORS.map((cat) => (
-              <div key={cat.key} className="flex items-center gap-2">
-                <span className={`w-3.5 h-3.5 rounded-sm ${cat.color}`} />
-                <span>{cat.label}</span>
-              </div>
-            ))}
-          </div>
-
-          {/* Main Chart Canvas with Fixed Dynamic Y-Axis Ticks & Multi-Bar Columns */}
+          {/* Main Chart Canvas with Fixed Dynamic Y-Axis Ticks & Single Bar Columns */}
           <div className="relative pt-4 pb-2 border-b border-[#E7E8F0] h-[270px] flex flex-col justify-end">
             {/* Background Y-Axis Ticks & Grid Lines */}
             <div className="absolute inset-0 flex flex-col justify-between pointer-events-none pb-8 pr-2">
@@ -371,85 +340,43 @@ export default function DashboardPage() {
               ))}
             </div>
 
-            {/* Multi-Bar Groups Rendering */}
-            <div className="relative pl-20 h-56 flex items-end justify-between gap-2 overflow-x-auto scrollbar-none">
+            {/* Single Overall Revenue Bar Columns (Matching ERCoffeeLab Admin theme) */}
+            <div className="relative pl-20 h-56 flex items-end justify-between gap-3 overflow-x-auto scrollbar-none">
               {trendList.length > 0 ? (
                 trendList.map((item, idx) => {
-                  const coffeeVal = item.coffeeRevenue || 0;
-                  const nonCoffeeVal = item.nonCoffeeRevenue || 0;
-                  const foodVal = item.foodRevenue || 0;
-                  const otherVal = item.otherRevenue || (item.revenue > 0 && !coffeeVal && !nonCoffeeVal && !foodVal ? item.revenue : 0);
-
-                  const coffeeH = coffeeVal > 0 ? Math.max(8, Math.round((coffeeVal / maxRevenue) * 100)) : 0;
-                  const nonCoffeeH = nonCoffeeVal > 0 ? Math.max(8, Math.round((nonCoffeeVal / maxRevenue) * 100)) : 0;
-                  const foodH = foodVal > 0 ? Math.max(8, Math.round((foodVal / maxRevenue) * 100)) : 0;
-                  const otherH = otherVal > 0 ? Math.max(8, Math.round((otherVal / maxRevenue) * 100)) : 0;
+                  const revVal = item.revenue || 0;
+                  const heightPercent = revVal > 0
+                    ? Math.max(12, Math.round((revVal / maxRevenue) * 100))
+                    : 3;
 
                   return (
                     <div key={idx} className="flex-1 h-full flex flex-col items-center justify-end group relative z-10">
                       {/* Overall Tooltip */}
                       <div className="absolute -top-12 opacity-0 group-hover:opacity-100 transition bg-[#0E1230] text-white text-[10px] py-1.5 px-2.5 rounded-lg shadow-xl pointer-events-none whitespace-nowrap z-30">
                         <p className="font-bold">{item.displayLabel || item.date}</p>
-                        <p className="text-[#C9A876]">Total: {formatRupiah(item.revenue)} ({item.orders} order)</p>
+                        <p className="text-[#C9A876]">Total Omset: {formatRupiah(revVal)} ({item.orders} order)</p>
                       </div>
 
-                      {/* Multi-Bar Group Columns */}
-                      <div className="w-full flex items-end justify-center gap-1 h-52 pb-1">
-                        {/* Bar 1: Coffee */}
-                        <div className="flex-1 max-w-[12px] flex flex-col items-center justify-end h-full relative">
-                          {coffeeVal > 0 && (
-                            <span className="absolute -top-4 text-[9px] font-bold text-[#0D8A73] whitespace-nowrap">
-                              {formatShortRupiah(coffeeVal)}
-                            </span>
-                          )}
-                          <div
-                            className="w-full bg-[#0D8A73] rounded-t-sm transition-all duration-500"
-                            style={{ height: `${coffeeH}%` }}
-                          />
-                        </div>
-
-                        {/* Bar 2: Non-Coffee */}
-                        <div className="flex-1 max-w-[12px] flex flex-col items-center justify-end h-full relative">
-                          {nonCoffeeVal > 0 && (
-                            <span className="absolute -top-4 text-[9px] font-bold text-[#10B981] whitespace-nowrap">
-                              {formatShortRupiah(nonCoffeeVal)}
-                            </span>
-                          )}
-                          <div
-                            className="w-full bg-[#10B981] rounded-t-sm transition-all duration-500"
-                            style={{ height: `${nonCoffeeH}%` }}
-                          />
-                        </div>
-
-                        {/* Bar 3: Food */}
-                        <div className="flex-1 max-w-[12px] flex flex-col items-center justify-end h-full relative">
-                          {foodVal > 0 && (
-                            <span className="absolute -top-4 text-[9px] font-bold text-[#4F46E5] whitespace-nowrap">
-                              {formatShortRupiah(foodVal)}
-                            </span>
-                          )}
-                          <div
-                            className="w-full bg-[#4F46E5] rounded-t-sm transition-all duration-500"
-                            style={{ height: `${foodH}%` }}
-                          />
-                        </div>
-
-                        {/* Bar 4: Other */}
-                        <div className="flex-1 max-w-[12px] flex flex-col items-center justify-end h-full relative">
-                          {otherVal > 0 && (
-                            <span className="absolute -top-4 text-[9px] font-bold text-[#F59E0B] whitespace-nowrap">
-                              {formatShortRupiah(otherVal)}
-                            </span>
-                          )}
-                          <div
-                            className="w-full bg-[#F59E0B] rounded-t-sm transition-all duration-500"
-                            style={{ height: `${otherH}%` }}
-                          />
-                        </div>
+                      {/* Bar Container */}
+                      <div className="w-full max-w-[36px] bg-[#F6F3EC] group-hover:bg-[#C9A876]/20 rounded-t-xl overflow-hidden flex flex-col justify-end h-48 transition relative">
+                        {/* Value Text Label above Bar */}
+                        {revVal > 0 && (
+                          <span className="absolute -top-4 left-1/2 -translate-x-1/2 text-[9px] font-bold font-mono text-[#181F4B] whitespace-nowrap">
+                            {formatShortRupiah(revVal)}
+                          </span>
+                        )}
+                        <div
+                          className={`w-full rounded-t-xl transition-all duration-500 ${
+                            revVal > 0
+                              ? 'bg-gradient-to-t from-[#181F4B] to-[#3B4B8C] group-hover:from-[#C9A876] group-hover:to-[#b3915f]'
+                              : 'bg-[#E7E8F0]'
+                          }`}
+                          style={{ height: `${heightPercent}%` }}
+                        />
                       </div>
 
                       {/* X-Axis Label */}
-                      <span className="text-[11px] font-medium text-[#6B7088] mt-2 font-source truncate max-w-[50px] text-center">
+                      <span className="text-[11px] font-medium text-[#6B7088] mt-2 font-source truncate max-w-[60px] text-center">
                         {item.displayLabel || item.date?.slice(5)}
                       </span>
                     </div>
