@@ -26,10 +26,6 @@ interface TrendItem {
   displayLabel?: string;
   revenue: number;
   orders: number;
-  coffeeRevenue?: number;
-  nonCoffeeRevenue?: number;
-  foodRevenue?: number;
-  otherRevenue?: number;
 }
 
 interface DashboardStats {
@@ -51,13 +47,6 @@ interface DashboardStats {
   activeOutletId?: number | null;
   activeOutletName?: string | null;
 }
-
-const CATEGORY_LEGENDS = [
-  { key: 'coffee', label: 'Espresso Based', color: 'bg-[#0D8A73]', hex: '#0D8A73' },
-  { key: 'nonCoffee', label: 'Non-Coffee', color: 'bg-[#10B981]', hex: '#10B981' },
-  { key: 'food', label: 'Pastry & Food', color: 'bg-[#4F46E5]', hex: '#4F46E5' },
-  { key: 'other', label: 'Penerimaan Lainnya', color: 'bg-[#F59E0B]', hex: '#F59E0B' },
-];
 
 export default function DashboardPage() {
   const {
@@ -119,7 +108,7 @@ export default function DashboardPage() {
         return <span className="badge badge-warning">PREPARING</span>;
       case 'ready':
       case 'on_delivery':
-        return <span className="badge badge-info font-bold">READY</span>;
+        return <span className="badge badge-info font-bold font-source">READY</span>;
       case 'cancelled':
         return <span className="badge badge-danger">CANCELLED</span>;
       default:
@@ -136,16 +125,7 @@ export default function DashboardPage() {
 
   // Compute dynamic Y-Axis scale for chart grid
   const trendList = stats?.dailySalesTrend || [];
-  const maxRevenue = Math.max(
-    ...trendList.flatMap((item) => [
-      item.revenue,
-      item.coffeeRevenue || 0,
-      item.nonCoffeeRevenue || 0,
-      item.foodRevenue || 0,
-      item.otherRevenue || 0,
-    ]),
-    100000
-  );
+  const maxRevenue = Math.max(...trendList.map((item) => item.revenue), 100000);
 
   // Generate 5 Y-Axis tick steps
   const yTicks = [
@@ -308,15 +288,15 @@ export default function DashboardPage() {
       {/* Main Grid: Time Performance Tracker & Quick Recent Orders */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Time Performance Tracker Chart (2 cols) */}
-        <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-[#E7E8F0] shadow-xs flex flex-col justify-between min-h-[460px] max-h-[520px]">
+        <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-[#E7E8F0] shadow-xs flex flex-col justify-between min-h-[440px] max-h-[500px]">
           {/* Tracker Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
             <div>
               <h2 className="text-lg font-bold font-albert text-[#181F4B]">
                 Time Performance Tracker
               </h2>
               <p className="text-xs text-[#6B7088] mt-0.5">
-                Mode {appliedRange === 'daily' ? 'harian (7 hari)' : appliedRange === 'weekly' ? 'mingguan (4 minggu)' : appliedRange === 'monthly' ? 'bulanan (12 bulan)' : 'tahunan (5 tahun)'}: statistik omset per kategori produk + total ({activeOutletName}).
+                Mode {appliedRange === 'daily' ? 'harian (7 hari)' : appliedRange === 'weekly' ? 'mingguan (4 minggu)' : appliedRange === 'monthly' ? 'bulanan (12 bulan)' : 'tahunan (5 tahun)'}: statistik omset pendapatan keseluruhan ({activeOutletName}).
               </p>
             </div>
 
@@ -346,17 +326,7 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Category Legends (Matching Reference Image Style 1:1) */}
-          <div className="flex flex-wrap items-center gap-5 mb-4 text-xs text-[#6B7088] font-medium">
-            {CATEGORY_LEGENDS.map((cat) => (
-              <div key={cat.key} className="flex items-center gap-2">
-                <span className={`w-3.5 h-3.5 rounded-sm ${cat.color}`} />
-                <span>{cat.label}</span>
-              </div>
-            ))}
-          </div>
-
-          {/* Main Chart Canvas with Fixed Dynamic Y-Axis Ticks & Multi-Bar Columns */}
+          {/* Main Chart Canvas with Fixed Dynamic Y-Axis Ticks & Theme-Matched Single Bar Columns */}
           <div className="relative pt-4 pb-2 border-b border-[#E7E8F0] h-[270px] flex flex-col justify-end">
             {/* Background Y-Axis Ticks & Grid Lines */}
             <div className="absolute inset-0 flex flex-col justify-between pointer-events-none pb-8 pr-2">
@@ -370,97 +340,43 @@ export default function DashboardPage() {
               ))}
             </div>
 
-            {/* Multi-Bar Groups Rendering */}
-            <div className="relative pl-20 h-56 flex items-end justify-between gap-2 overflow-x-auto scrollbar-none">
+            {/* Theme-Matched Single Bar Columns (No category split, clean theme colors, empty when 0, hover nominal) */}
+            <div className="relative pl-20 h-56 flex items-end justify-between gap-3 overflow-x-auto scrollbar-none">
               {trendList.length > 0 ? (
                 trendList.map((item, idx) => {
-                  const coffeeVal = item.coffeeRevenue || 0;
-                  const nonCoffeeVal = item.nonCoffeeRevenue || 0;
-                  const foodVal = item.foodRevenue || 0;
-                  const otherVal = item.otherRevenue || (item.revenue > 0 && !coffeeVal && !nonCoffeeVal && !foodVal ? item.revenue : 0);
-
-                  const coffeeH = coffeeVal > 0 ? Math.max(6, Math.round((coffeeVal / maxRevenue) * 100)) : 0;
-                  const nonCoffeeH = nonCoffeeVal > 0 ? Math.max(6, Math.round((nonCoffeeVal / maxRevenue) * 100)) : 0;
-                  const foodH = foodVal > 0 ? Math.max(6, Math.round((foodVal / maxRevenue) * 100)) : 0;
-                  const otherH = otherVal > 0 ? Math.max(6, Math.round((otherVal / maxRevenue) * 100)) : 0;
+                  const revVal = item.revenue || 0;
+                  const heightPercent = revVal > 0
+                    ? Math.max(6, Math.round((revVal / maxRevenue) * 100))
+                    : 0; // Empty when 0 data!
 
                   return (
                     <div key={idx} className="flex-1 h-full flex flex-col items-center justify-end group relative z-10">
-                      {/* Hover Tooltip showing exact nominal */}
+                      {/* Overall Tooltip */}
                       <div className="absolute -top-14 opacity-0 group-hover:opacity-100 transition duration-200 bg-[#0E1230] text-white text-[10px] py-1.5 px-2.5 rounded-lg shadow-2xl pointer-events-none whitespace-nowrap z-30 flex flex-col items-center">
                         <p className="font-bold text-white">{item.displayLabel || item.date}</p>
-                        <p className="text-[#C9A876] font-mono font-bold mt-0.5">Total: {formatRupiah(item.revenue)} ({item.orders} order)</p>
+                        <p className="text-[#C9A876] font-mono font-bold mt-0.5">Total Omset: {formatRupiah(revVal)} ({item.orders} order)</p>
                       </div>
 
-                      {/* Multi-Bar Group Columns */}
-                      <div className="w-full flex items-end justify-center gap-1 h-48 pb-1">
-                        {/* Bar 1: Coffee */}
-                        <div className="flex-1 max-w-[12px] flex flex-col items-center justify-end h-full relative group/bar">
-                          {/* Nominal text shown on hover */}
-                          {coffeeVal > 0 && (
-                            <span className="absolute -top-5 text-[9px] font-bold font-mono text-[#0D8A73] opacity-0 group-hover/bar:opacity-100 transition whitespace-nowrap z-20">
-                              {formatShortRupiah(coffeeVal)}
-                            </span>
-                          )}
-                          {coffeeH > 0 && (
-                            <div
-                              className="w-full bg-[#0D8A73] rounded-t-sm transition-all duration-500 hover:brightness-110"
-                              style={{ height: `${coffeeH}%` }}
-                            />
-                          )}
-                        </div>
+                      {/* Single Bar Column with Theme Color Gradient */}
+                      <div className="w-full max-w-[36px] flex flex-col justify-end h-48 relative group/bar">
+                        {/* Hover Nominal Text directly above bar */}
+                        {revVal > 0 && (
+                          <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-[9px] font-bold font-mono text-[#181F4B] opacity-0 group-hover/bar:opacity-100 transition whitespace-nowrap z-20">
+                            {formatShortRupiah(revVal)}
+                          </span>
+                        )}
 
-                        {/* Bar 2: Non-Coffee */}
-                        <div className="flex-1 max-w-[12px] flex flex-col items-center justify-end h-full relative group/bar">
-                          {/* Nominal text shown on hover */}
-                          {nonCoffeeVal > 0 && (
-                            <span className="absolute -top-5 text-[9px] font-bold font-mono text-[#10B981] opacity-0 group-hover/bar:opacity-100 transition whitespace-nowrap z-20">
-                              {formatShortRupiah(nonCoffeeVal)}
-                            </span>
-                          )}
-                          {nonCoffeeH > 0 && (
-                            <div
-                              className="w-full bg-[#10B981] rounded-t-sm transition-all duration-500 hover:brightness-110"
-                              style={{ height: `${nonCoffeeH}%` }}
-                            />
-                          )}
-                        </div>
-
-                        {/* Bar 3: Food */}
-                        <div className="flex-1 max-w-[12px] flex flex-col items-center justify-end h-full relative group/bar">
-                          {/* Nominal text shown on hover */}
-                          {foodVal > 0 && (
-                            <span className="absolute -top-5 text-[9px] font-bold font-mono text-[#4F46E5] opacity-0 group-hover/bar:opacity-100 transition whitespace-nowrap z-20">
-                              {formatShortRupiah(foodVal)}
-                            </span>
-                          )}
-                          {foodH > 0 && (
-                            <div
-                              className="w-full bg-[#4F46E5] rounded-t-sm transition-all duration-500 hover:brightness-110"
-                              style={{ height: `${foodH}%` }}
-                            />
-                          )}
-                        </div>
-
-                        {/* Bar 4: Other */}
-                        <div className="flex-1 max-w-[12px] flex flex-col items-center justify-end h-full relative group/bar">
-                          {/* Nominal text shown on hover */}
-                          {otherVal > 0 && (
-                            <span className="absolute -top-5 text-[9px] font-bold font-mono text-[#F59E0B] opacity-0 group-hover/bar:opacity-100 transition whitespace-nowrap z-20">
-                              {formatShortRupiah(otherVal)}
-                            </span>
-                          )}
-                          {otherH > 0 && (
-                            <div
-                              className="w-full bg-[#F59E0B] rounded-t-sm transition-all duration-500 hover:brightness-110"
-                              style={{ height: `${otherH}%` }}
-                            />
-                          )}
-                        </div>
+                        {/* Render bar ONLY if height > 0 (completely empty when 0 data!) */}
+                        {heightPercent > 0 && (
+                          <div
+                            className="w-full rounded-t-xl bg-gradient-to-t from-[#181F4B] to-[#3B4B8C] group-hover:from-[#C9A876] group-hover:to-[#b3915f] transition-all duration-500 shadow-2xs"
+                            style={{ height: `${heightPercent}%` }}
+                          />
+                        )}
                       </div>
 
                       {/* X-Axis Label */}
-                      <span className="text-[11px] font-medium text-[#6B7088] mt-2 font-source truncate max-w-[55px] text-center">
+                      <span className="text-[11px] font-medium text-[#6B7088] mt-2 font-source truncate max-w-[60px] text-center">
                         {item.displayLabel || item.date?.slice(5)}
                       </span>
                     </div>
