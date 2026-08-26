@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { apiFetch } from '@/lib/api-client';
+import { useOutletContext } from '@/context/OutletContext';
 import Pagination from '@/components/Pagination';
 import {
   Coffee,
@@ -13,6 +14,8 @@ import {
   CheckCircle2,
   AlertCircle,
   ShoppingBag,
+  Store,
+  Globe,
 } from 'lucide-react';
 
 export interface OrderItem {
@@ -42,6 +45,13 @@ const STATUS_TABS = [
 ];
 
 export default function OrdersPage() {
+  const {
+    staff,
+    selectedOutletId,
+    isSuperAdmin,
+    activeOutletName,
+  } = useOutletContext();
+
   const [orders, setOrders] = useState<OrderItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -58,10 +68,14 @@ export default function OrdersPage() {
     }
     setError(null);
     try {
-      const endpoint =
+      let endpoint =
         activeTab === 'all'
           ? '/api/orders'
           : `/api/orders?status=${activeTab}`;
+
+      if (isSuperAdmin && selectedOutletId) {
+        endpoint += `${endpoint.includes('?') ? '&' : '?'}outletId=${selectedOutletId}`;
+      }
 
       const res = await apiFetch<{ data: OrderItem[] }>(endpoint);
       if (Array.isArray(res?.data)) {
@@ -80,13 +94,13 @@ export default function OrdersPage() {
         setLoading(false);
       }
     }
-  }, [activeTab]);
+  }, [activeTab, isSuperAdmin, selectedOutletId]);
 
   useEffect(() => {
     fetchOrders(false);
     setCurrentPage(1);
 
-    // Auto background polling every 5 seconds for incoming orders
+    // Auto background polling every 5 seconds with outlet filter
     const timer = setInterval(() => {
       fetchOrders(true);
     }, 5000);
@@ -157,20 +171,36 @@ export default function OrdersPage() {
   return (
     <div className="space-y-6 font-source">
       {/* Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-[#E7E8F0] shadow-xs">
         <div>
-          <h1 className="text-2xl font-bold font-albert text-[#181F4B]">
-            Daftar Pesanan Masuk (Real-Time)
-          </h1>
-          <p className="text-xs text-[#6B7088] mt-0.5">
-            Pantau dan kelola seluruh transaksi order pelanggan di outlet cabang secara otomatis.
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold font-albert text-[#181F4B]">
+              Daftar Pesanan Masuk (Real-Time)
+            </h1>
+
+            {/* Active Outlet Scope Badge */}
+            {!isSuperAdmin ? (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#EDF0FA] border border-[#D2D9F3] text-xs font-bold text-[#3B4B8C] font-albert shadow-xs">
+                <Store className="w-3.5 h-3.5 text-[#3B4B8C]" />
+                <span>Cabang Aktif: {activeOutletName}</span>
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#F6F3EC] border border-[#C9A876]/40 text-xs font-bold text-[#181F4B] font-albert shadow-xs">
+                <Globe className="w-3.5 h-3.5 text-[#C9A876]" />
+                <span>{activeOutletName}</span>
+              </span>
+            )}
+          </div>
+
+          <p className="text-xs text-[#6B7088] mt-1">
+            Pantau dan kelola seluruh transaksi order pelanggan secara otomatis ({activeOutletName}).
           </p>
         </div>
 
         <button
           onClick={() => fetchOrders()}
           disabled={loading}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-white hover:bg-[#F6F3EC] border border-[#E7E8F0] hover:border-[#C9A876] rounded-xl text-xs font-semibold text-[#181F4B] transition-all duration-150 shadow-xs cursor-pointer disabled:opacity-50 hover:scale-[1.02] active:scale-[0.98]"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-white hover:bg-[#F6F3EC] border border-[#E7E8F0] hover:border-[#C9A876] rounded-xl text-xs font-semibold text-[#181F4B] transition-all duration-150 shadow-xs cursor-pointer disabled:opacity-50 hover:scale-[1.02] active:scale-[0.98] self-start sm:self-auto"
         >
           <RefreshCw className={`w-3.5 h-3.5 text-[#C9A876] ${loading ? 'animate-spin' : ''}`} />
           <span>Refresh Orders</span>

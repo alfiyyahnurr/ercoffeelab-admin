@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { apiFetch } from '@/lib/api-client';
+import { useOutletContext } from '@/context/OutletContext';
 import {
   TrendingUp,
   ShoppingBag,
@@ -14,6 +15,9 @@ import {
   CheckCircle2,
   AlertCircle,
   BarChart3,
+  Store,
+  Globe,
+  ChevronDown,
 } from 'lucide-react';
 
 interface DashboardStats {
@@ -36,41 +40,43 @@ interface DashboardStats {
     revenue: number;
     orders: number;
   }>;
+  activeOutletId?: number | null;
+  activeOutletName?: string | null;
 }
 
 export default function DashboardPage() {
+  const {
+    staff,
+    selectedOutletId,
+    setSelectedOutletId,
+    outlets,
+    isSuperAdmin,
+    activeOutletName,
+  } = useOutletContext();
+
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchDashboardStats = useCallback(async (isBackground = false) => {
-    if (!isBackground) {
-      setLoading(true);
-    }
+  const fetchDashboardStats = useCallback(async () => {
+    setLoading(true);
     setError(null);
     try {
-      const data = await apiFetch<DashboardStats>('/api/dashboard/stats');
+      let endpoint = '/api/dashboard/stats';
+      if (isSuperAdmin && selectedOutletId) {
+        endpoint += `?outletId=${selectedOutletId}`;
+      }
+      const data = await apiFetch<DashboardStats>(endpoint);
       setStats(data);
     } catch (err: any) {
-      if (!isBackground) {
-        setError(err?.message || 'Gagal memuat statistik dashboard');
-      }
+      setError(err?.message || 'Gagal memuat statistik dashboard');
     } finally {
-      if (!isBackground) {
-        setLoading(false);
-      }
+      setLoading(false);
     }
-  }, []);
+  }, [isSuperAdmin, selectedOutletId]);
 
   useEffect(() => {
-    fetchDashboardStats(false);
-
-    // Auto background polling every 5 seconds for live dashboard updates
-    const timer = setInterval(() => {
-      fetchDashboardStats(true);
-    }, 5000);
-
-    return () => clearInterval(timer);
+    fetchDashboardStats();
   }, [fetchDashboardStats]);
 
   const formatRupiah = (val: number) =>
@@ -103,24 +109,65 @@ export default function DashboardPage() {
   return (
     <div className="space-y-8 font-source">
       {/* Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-[#E7E8F0] shadow-xs">
         <div>
-          <h1 className="text-2xl font-bold font-albert text-[#181F4B]">
-            Executive Dashboard
-          </h1>
-          <p className="text-xs text-[#6B7088] mt-0.5">
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold font-albert text-[#181F4B]">
+              Executive Dashboard
+            </h1>
+
+            {/* Active Outlet Scope Badge */}
+            {!isSuperAdmin ? (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#EDF0FA] border border-[#D2D9F3] text-xs font-bold text-[#3B4B8C] font-albert shadow-xs">
+                <Store className="w-3.5 h-3.5 text-[#3B4B8C]" />
+                <span>Cabang Aktif: {activeOutletName}</span>
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#F6F3EC] border border-[#C9A876]/40 text-xs font-bold text-[#181F4B] font-albert shadow-xs">
+                <Globe className="w-3.5 h-3.5 text-[#C9A876]" />
+                <span>Global Overview</span>
+              </span>
+            )}
+          </div>
+
+          <p className="text-xs text-[#6B7088] mt-1">
             Ringkasan omset harian, tren pesanan, dan monitoring operasi live.
           </p>
         </div>
 
-        <button
-          onClick={() => fetchDashboardStats()}
-          disabled={loading}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-white hover:bg-[#F6F3EC] border border-[#E7E8F0] rounded-xl text-xs font-semibold text-[#181F4B] transition shadow-xs cursor-pointer self-start sm:self-auto disabled:opacity-50"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 text-[#C9A876] ${loading ? 'animate-spin' : ''}`} />
-          <span>Refresh Data</span>
-        </button>
+        {/* Action Controls: Outlet Selector for Super Admin & Refresh Button */}
+        <div className="flex flex-wrap items-center gap-3">
+          {isSuperAdmin && (
+            <div className="relative flex items-center">
+              <Store className="w-4 h-4 absolute left-3 text-[#C9A876] pointer-events-none" />
+              <select
+                value={selectedOutletId ?? 'all'}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setSelectedOutletId(val === 'all' ? null : Number(val));
+                }}
+                className="pl-9 pr-9 py-2 bg-[#F6F3EC] border border-[#C9A876]/40 rounded-xl text-xs font-semibold font-albert text-[#181F4B] focus:outline-none focus:border-[#C9A876] appearance-none cursor-pointer shadow-xs transition"
+              >
+                <option value="all">Semua Outlet (Global)</option>
+                {outlets.map((outlet) => (
+                  <option key={outlet.id} value={outlet.id}>
+                    {outlet.name}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="w-3.5 h-3.5 absolute right-3 text-[#6B7088] pointer-events-none" />
+            </div>
+          )}
+
+          <button
+            onClick={fetchDashboardStats}
+            disabled={loading}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-white hover:bg-[#F6F3EC] border border-[#E7E8F0] rounded-xl text-xs font-semibold text-[#181F4B] transition shadow-xs cursor-pointer disabled:opacity-50"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 text-[#C9A876] ${loading ? 'animate-spin' : ''}`} />
+            <span>Refresh Data</span>
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -147,7 +194,7 @@ export default function DashboardPage() {
           </div>
           <p className="text-[11px] text-[#6B7088] mt-1.5 flex items-center gap-1">
             <CheckCircle2 className="w-3.5 h-3.5 text-green" />
-            <span>Pendapatan berhasil terverifikasi</span>
+            <span>Pendapatan terverifikasi ({activeOutletName})</span>
           </p>
         </div>
 
@@ -217,7 +264,7 @@ export default function DashboardPage() {
                 Tren Penjualan 7 Hari Terakhir
               </h2>
               <p className="text-xs text-[#6B7088] mt-0.5">
-                Performa omset harian yang berhasil diproses
+                Performa omset harian ({activeOutletName})
               </p>
             </div>
             <span className="text-xs font-semibold text-[#C9A876] bg-[#F6F3EC] px-3 py-1 rounded-full border border-[#C9A876]/30">

@@ -6,83 +6,24 @@ import Topbar from '@/components/Topbar';
 import OrderAlertToast from '@/components/OrderAlertToast';
 import { getStoredToken, parseStaffToken, StaffPayload } from '@/lib/auth';
 import { apiFetch } from '@/lib/api-client';
+import { OutletProvider, useOutletContext } from '@/context/OutletContext';
 
-export default function ProtectedLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+function InnerLayout({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mounted, setMounted] = useState(false);
 
-  // Instant client-side state initialization from stored token
-  const [staff, setStaff] = useState<StaffPayload | null>(() => {
-    if (typeof window !== 'undefined') {
-      const token = getStoredToken();
-      if (token) return parseStaffToken(token);
-    }
-    return null;
-  });
-
-  const [selectedOutletId, setSelectedOutletId] = useState<number | null>(() => {
-    if (typeof window !== 'undefined') {
-      const token = getStoredToken();
-      if (token) {
-        const parsed = parseStaffToken(token);
-        if (parsed?.role === 'outlet_admin' && parsed?.outletId) {
-          return parsed.outletId;
-        }
-      }
-    }
-    return null;
-  });
-
-  const syncStaffState = (token: string) => {
-    const parsedStaff = parseStaffToken(token);
-    setStaff(parsedStaff);
-    if (parsedStaff) {
-      if (parsedStaff.role === 'outlet_admin' && parsedStaff.outletId) {
-        setSelectedOutletId(parsedStaff.outletId);
-      } else if (parsedStaff.role === 'super_admin') {
-        setSelectedOutletId(null);
-      }
-    }
-  };
+  const { staff, selectedOutletId, setSelectedOutletId } = useOutletContext();
 
   useEffect(() => {
     setMounted(true);
     const token = getStoredToken();
     if (token) {
-      syncStaffState(token);
-
-      // Re-fetch fresh staff profile from database seamlessly in background
-      apiFetch<{ staff: StaffPayload }>('/api/auth/me')
-        .then((res) => {
-          if (res?.staff) {
-            setStaff(res.staff);
-            if (res.staff.role === 'outlet_admin' && res.staff.outletId) {
-              setSelectedOutletId(res.staff.outletId);
-            }
-          }
-        })
-        .catch(() => null);
-
-      // Re-sync HttpOnly session cookie
       fetch('/api/set-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token }),
       }).catch(() => null);
     }
-
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'ercoffeelab_staff_token' && e.newValue) {
-        syncStaffState(e.newValue);
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
   return (
@@ -122,5 +63,17 @@ export default function ProtectedLayout({
         </main>
       </div>
     </div>
+  );
+}
+
+export default function ProtectedLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <OutletProvider>
+      <InnerLayout>{children}</InnerLayout>
+    </OutletProvider>
   );
 }
