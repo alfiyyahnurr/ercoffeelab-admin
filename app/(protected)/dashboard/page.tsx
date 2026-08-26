@@ -351,21 +351,22 @@ export default function DashboardPage() {
 
                   return (
                     <div key={idx} className="flex-1 h-full flex flex-col items-center justify-end group relative z-10">
-                      {/* Prominent Hover Nominal Badge appearing above bar on hover */}
-                      <div className="absolute -top-12 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 group-hover:-translate-y-1 transition-all duration-200 bg-[#0E1230] border border-[#C9A876]/40 text-white text-[11px] font-bold font-mono px-3 py-1 rounded-xl shadow-xl pointer-events-none whitespace-nowrap z-30 flex items-center gap-1.5">
-                        <span className="text-[#C9A876]">{formatRupiah(revVal)}</span>
-                        {item.orders > 0 && (
-                          <span className="text-[#A0A5BD] text-[10px] font-normal font-source">
-                            ({item.orders} order)
-                          </span>
-                        )}
+                      {/* Hover Popover Box matching screenshot 1:1 */}
+                      <div className="absolute -top-16 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 group-hover:-translate-y-1 transition-all duration-200 bg-[#1E202B] text-white p-2.5 rounded-xl shadow-2xl border border-[#3B4B8C]/40 pointer-events-none whitespace-nowrap z-30 flex flex-col gap-1 min-w-[140px]">
+                        <p className="text-xs font-bold font-albert border-b border-[#3B4B8C]/40 pb-1 text-white">
+                          {item.displayLabel || item.date}
+                        </p>
+                        <div className="flex items-center gap-1.5 text-[11px] font-medium font-source">
+                          <span className="w-2.5 h-2.5 rounded-xs bg-[#C9A876] shrink-0" />
+                          <span>Total Omset: <strong className="font-mono text-[#C9A876] font-bold">{formatRupiah(revVal)}</strong></span>
+                        </div>
                       </div>
 
                       {/* Single Bar Column with Theme Color Gradient */}
                       <div className="w-full max-w-[36px] flex flex-col justify-end h-48 relative">
-                        {/* Always show short nominal label on hover directly above bar */}
+                        {/* Static nominal label ALWAYS visible directly above bar */}
                         {revVal > 0 && (
-                          <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-[10px] font-bold font-mono text-[#181F4B] opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-20">
+                          <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-[10px] font-bold font-mono text-[#181F4B] whitespace-nowrap z-20">
                             {formatShortRupiah(revVal)}
                           </span>
                         )}
