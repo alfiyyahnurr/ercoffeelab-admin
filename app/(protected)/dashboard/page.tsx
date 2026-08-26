@@ -19,7 +19,19 @@ import {
   Store,
   Globe,
   ChevronDown,
+  Calendar,
 } from 'lucide-react';
+
+interface TrendItem {
+  date: string;
+  displayLabel?: string;
+  revenue: number;
+  orders: number;
+  coffeeRevenue?: number;
+  nonCoffeeRevenue?: number;
+  foodRevenue?: number;
+  otherRevenue?: number;
+}
 
 interface DashboardStats {
   todayRevenue: number;
@@ -36,14 +48,17 @@ interface DashboardStats {
     paymentStatus: string;
     createdAt: string;
   }>;
-  dailySalesTrend: Array<{
-    date: string;
-    revenue: number;
-    orders: number;
-  }>;
+  dailySalesTrend: TrendItem[];
   activeOutletId?: number | null;
   activeOutletName?: string | null;
 }
+
+const CATEGORY_COLORS = [
+  { key: 'coffee', label: 'Espresso Based', color: 'bg-[#0D8A73]', hex: '#0D8A73' },
+  { key: 'nonCoffee', label: 'Non-Coffee', color: 'bg-[#10B981]', hex: '#10B981' },
+  { key: 'food', label: 'Pastry & Food', color: 'bg-[#4F46E5]', hex: '#4F46E5' },
+  { key: 'other', label: 'Penerimaan Lainnya', color: 'bg-[#F59E0B]', hex: '#F59E0B' },
+];
 
 export default function DashboardPage() {
   const {
@@ -60,13 +75,17 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Range Selector State
+  const [selectedRange, setSelectedRange] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('daily');
+  const [appliedRange, setAppliedRange] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('daily');
+
   const fetchDashboardStats = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      let endpoint = '/api/dashboard/stats';
+      let endpoint = `/api/dashboard/stats?range=${appliedRange}`;
       if (isSuperAdmin && selectedOutletId) {
-        endpoint += `?outletId=${selectedOutletId}`;
+        endpoint += `&outletId=${selectedOutletId}`;
       }
       const data = await apiFetch<DashboardStats>(endpoint);
       setStats(data);
@@ -75,7 +94,7 @@ export default function DashboardPage() {
     } finally {
       setLoading(false);
     }
-  }, [isSuperAdmin, selectedOutletId]);
+  }, [isSuperAdmin, selectedOutletId, appliedRange]);
 
   useEffect(() => {
     fetchDashboardStats();
@@ -83,6 +102,14 @@ export default function DashboardPage() {
 
   const formatRupiah = (val: number) =>
     'Rp' + Math.max(0, Math.round(val || 0)).toLocaleString('id-ID');
+
+  const formatShortRupiah = (val: number) => {
+    if (!val || val <= 0) return '';
+    if (val >= 1_000_000_000) return (val / 1_000_000_000).toFixed(1).replace('.', ',') + 'M';
+    if (val >= 1_000_000) return (val / 1_000_000).toFixed(1).replace('.', ',') + 'jt';
+    if (val >= 1_000) return Math.round(val / 1_000) + 'rb';
+    return val.toString();
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status?.toLowerCase()) {
@@ -107,6 +134,28 @@ export default function DashboardPage() {
     }
     return <span className="text-[11px] font-semibold text-red">UNPAID</span>;
   };
+
+  // Compute dynamic Y-Axis scale for chart grid
+  const trendList = stats?.dailySalesTrend || [];
+  const maxRevenue = Math.max(
+    ...trendList.flatMap((item) => [
+      item.revenue,
+      item.coffeeRevenue || 0,
+      item.nonCoffeeRevenue || 0,
+      item.foodRevenue || 0,
+      item.otherRevenue || 0,
+    ]),
+    100000
+  );
+
+  // Generate 5 Y-Axis tick steps
+  const yTicks = [
+    maxRevenue,
+    maxRevenue * 0.75,
+    maxRevenue * 0.5,
+    maxRevenue * 0.25,
+    0,
+  ];
 
   return (
     <div className="space-y-8 font-source">
@@ -257,68 +306,166 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Main Grid: Trend Chart & Live Orders Table */}
+      {/* Main Grid: Time Performance Tracker & Quick Recent Orders */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Sales Trend Chart (2 cols) */}
+        {/* Time Performance Tracker Chart (2 cols) */}
         <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-[#E7E8F0] shadow-xs flex flex-col justify-between">
-          <div className="flex items-center justify-between mb-6">
+          {/* Tracker Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
             <div>
-              <h2 className="text-base font-bold font-albert text-[#181F4B] flex items-center gap-2">
-                <BarChart3 className="w-5 h-5 text-[#C9A876]" />
-                Tren Penjualan 7 Hari Terakhir
+              <h2 className="text-lg font-bold font-albert text-[#181F4B]">
+                Time Performance Tracker
               </h2>
               <p className="text-xs text-[#6B7088] mt-0.5">
-                Performa omset harian ({activeOutletName})
+                Mode {appliedRange === 'daily' ? 'harian (7 hari)' : appliedRange === 'weekly' ? 'mingguan (4 minggu)' : appliedRange === 'monthly' ? 'bulanan (12 bulan)' : 'tahunan (5 tahun)'}: statistik omset per kategori produk + total omset ({activeOutletName}).
               </p>
             </div>
-            <span className="text-xs font-semibold text-[#C9A876] bg-[#F6F3EC] px-3 py-1 rounded-full border border-[#C9A876]/30">
-              Live Metrics
-            </span>
+
+            {/* Range Controls: Dropdown + Terapkan Button */}
+            <div className="flex items-center gap-2 shrink-0">
+              <div className="relative">
+                <select
+                  value={selectedRange}
+                  onChange={(e) => setSelectedRange(e.target.value as any)}
+                  className="pl-3 pr-8 py-2 bg-white border border-[#E7E8F0] rounded-xl text-xs font-medium text-[#181F4B] focus:outline-none focus:border-[#C9A876] appearance-none cursor-pointer shadow-2xs"
+                >
+                  <option value="daily">Harian (7 Hari)</option>
+                  <option value="weekly">Mingguan (4 Minggu)</option>
+                  <option value="monthly">Bulanan (12 Bulan)</option>
+                  <option value="yearly">Tahunan (5 Tahun)</option>
+                </select>
+                <ChevronDown className="w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 text-[#6B7088] pointer-events-none" />
+              </div>
+
+              <button
+                onClick={() => setAppliedRange(selectedRange)}
+                disabled={loading}
+                className="px-4 py-2 bg-white hover:bg-[#F6F3EC] border border-[#E7E8F0] hover:border-[#C9A876] rounded-xl text-xs font-semibold text-[#6B7088] hover:text-[#181F4B] transition cursor-pointer shadow-2xs disabled:opacity-50"
+              >
+                Terapkan
+              </button>
+            </div>
           </div>
 
-          {/* Visual Trend Bars */}
-          <div className="h-56 flex items-end justify-between gap-2 pt-6 border-b border-[#E7E8F0] pb-2">
-            {stats?.dailySalesTrend && stats.dailySalesTrend.length > 0 ? (
-              stats.dailySalesTrend.map((item, idx) => {
-                const maxRev = Math.max(...stats.dailySalesTrend.map((d) => d.revenue), 1);
-                const heightPercent = item.revenue > 0
-                  ? Math.max(12, Math.round((item.revenue / maxRev) * 100))
-                  : 3;
-
-                return (
-                  <div key={idx} className="flex-1 h-full flex flex-col items-center justify-end gap-2 group relative">
-                    {/* Hover Tooltip */}
-                    <div className="absolute -top-10 opacity-0 group-hover:opacity-100 transition bg-[#0E1230] text-white text-[10px] py-1 px-2 rounded shadow-lg pointer-events-none whitespace-nowrap z-10">
-                      {formatRupiah(item.revenue)} ({item.orders} order)
-                    </div>
-
-                    <div className="w-full max-w-[36px] bg-[#F6F3EC] group-hover:bg-[#C9A876]/20 rounded-t-xl overflow-hidden flex items-end h-40 transition">
-                      <div
-                        className={`w-full rounded-t-xl transition-all duration-500 ${
-                          item.revenue > 0
-                            ? 'bg-gradient-to-t from-[#181F4B] to-[#3B4B8C] group-hover:from-[#C9A876] group-hover:to-[#b3915f]'
-                            : 'bg-[#E7E8F0]'
-                        }`}
-                        style={{ height: `${heightPercent}%` }}
-                      />
-                    </div>
-
-                    <span className="text-[10px] font-medium text-[#6B7088] font-mono truncate">
-                      {item.date?.slice(5)}
-                    </span>
-                  </div>
-                );
-              })
-            ) : (
-              <div className="w-full h-full flex flex-col items-center justify-center text-xs text-[#6B7088] space-y-2">
-                <BarChart3 className="w-8 h-8 text-[#E7E8F0]" />
-                <p>Belum ada tren data penjualan 7 hari terakhir.</p>
+          {/* Category Color Legends (Matching reference image) */}
+          <div className="flex flex-wrap items-center gap-4 mb-6 text-xs text-[#6B7088] font-medium">
+            {CATEGORY_COLORS.map((cat) => (
+              <div key={cat.key} className="flex items-center gap-2">
+                <span className={`w-3.5 h-3.5 rounded-sm ${cat.color}`} />
+                <span>{cat.label}</span>
               </div>
-            )}
+            ))}
+          </div>
+
+          {/* Main Chart Canvas with Dynamic Y-Axis Ticks & Multi-Bar Columns */}
+          <div className="relative pt-4 pb-2 border-b border-[#E7E8F0]">
+            {/* Background Y-Axis Ticks & Grid Lines */}
+            <div className="absolute inset-0 flex flex-col justify-between pointer-events-none pb-8 pr-2">
+              {yTicks.map((tick, idx) => (
+                <div key={idx} className="flex items-center justify-between w-full">
+                  <span className="text-[10px] font-mono text-[#A0A5BD] w-24 shrink-0">
+                    {formatRupiah(tick)}
+                  </span>
+                  <div className="w-full border-t border-[#E7E8F0]/70" />
+                </div>
+              ))}
+            </div>
+
+            {/* Multi-Bar Groups Rendering */}
+            <div className="relative pl-24 h-64 flex items-end justify-between gap-3 pt-6">
+              {trendList.length > 0 ? (
+                trendList.map((item, idx) => {
+                  const coffeeVal = item.coffeeRevenue || 0;
+                  const nonCoffeeVal = item.nonCoffeeRevenue || 0;
+                  const foodVal = item.foodRevenue || 0;
+                  const otherVal = item.otherRevenue || (item.revenue > 0 && !coffeeVal && !nonCoffeeVal && !foodVal ? item.revenue : 0);
+
+                  const coffeeH = coffeeVal > 0 ? Math.max(8, Math.round((coffeeVal / maxRevenue) * 100)) : 0;
+                  const nonCoffeeH = nonCoffeeVal > 0 ? Math.max(8, Math.round((nonCoffeeVal / maxRevenue) * 100)) : 0;
+                  const foodH = foodVal > 0 ? Math.max(8, Math.round((foodVal / maxRevenue) * 100)) : 0;
+                  const otherH = otherVal > 0 ? Math.max(8, Math.round((otherVal / maxRevenue) * 100)) : 0;
+
+                  return (
+                    <div key={idx} className="flex-1 h-full flex flex-col items-center justify-end group relative z-10">
+                      {/* Overall Tooltip */}
+                      <div className="absolute -top-12 opacity-0 group-hover:opacity-100 transition bg-[#0E1230] text-white text-[10px] py-1.5 px-2.5 rounded-lg shadow-xl pointer-events-none whitespace-nowrap z-30">
+                        <p className="font-bold">{item.displayLabel || item.date}</p>
+                        <p className="text-[#C9A876]">Total: {formatRupiah(item.revenue)} ({item.orders} order)</p>
+                      </div>
+
+                      {/* Multi-Bar Group Columns */}
+                      <div className="w-full flex items-end justify-center gap-1 h-52 pb-1">
+                        {/* Bar 1: Coffee */}
+                        <div className="flex-1 max-w-[12px] flex flex-col items-center justify-end h-full relative">
+                          {coffeeVal > 0 && (
+                            <span className="absolute -top-4 text-[9px] font-bold text-[#0D8A73] whitespace-nowrap">
+                              {formatShortRupiah(coffeeVal)}
+                            </span>
+                          )}
+                          <div
+                            className="w-full bg-[#0D8A73] rounded-t-sm transition-all duration-500"
+                            style={{ height: `${coffeeH}%` }}
+                          />
+                        </div>
+
+                        {/* Bar 2: Non-Coffee */}
+                        <div className="flex-1 max-w-[12px] flex flex-col items-center justify-end h-full relative">
+                          {nonCoffeeVal > 0 && (
+                            <span className="absolute -top-4 text-[9px] font-bold text-[#10B981] whitespace-nowrap">
+                              {formatShortRupiah(nonCoffeeVal)}
+                            </span>
+                          )}
+                          <div
+                            className="w-full bg-[#10B981] rounded-t-sm transition-all duration-500"
+                            style={{ height: `${nonCoffeeH}%` }}
+                          />
+                        </div>
+
+                        {/* Bar 3: Food */}
+                        <div className="flex-1 max-w-[12px] flex flex-col items-center justify-end h-full relative">
+                          {foodVal > 0 && (
+                            <span className="absolute -top-4 text-[9px] font-bold text-[#4F46E5] whitespace-nowrap">
+                              {formatShortRupiah(foodVal)}
+                            </span>
+                          )}
+                          <div
+                            className="w-full bg-[#4F46E5] rounded-t-sm transition-all duration-500"
+                            style={{ height: `${foodH}%` }}
+                          />
+                        </div>
+
+                        {/* Bar 4: Other */}
+                        <div className="flex-1 max-w-[12px] flex flex-col items-center justify-end h-full relative">
+                          {otherVal > 0 && (
+                            <span className="absolute -top-4 text-[9px] font-bold text-[#F59E0B] whitespace-nowrap">
+                              {formatShortRupiah(otherVal)}
+                            </span>
+                          )}
+                          <div
+                            className="w-full bg-[#F59E0B] rounded-t-sm transition-all duration-500"
+                            style={{ height: `${otherH}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* X-Axis Label */}
+                      <span className="text-[11px] font-medium text-[#6B7088] mt-2 font-source truncate max-w-[50px] text-center">
+                        {item.displayLabel || item.date?.slice(5)}
+                      </span>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="w-full h-full flex flex-col items-center justify-center text-xs text-[#6B7088] space-y-2">
+                  <BarChart3 className="w-8 h-8 text-[#E7E8F0]" />
+                  <p>Belum ada data tren penjualan untuk periode ini.</p>
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="mt-4 flex items-center justify-between text-xs text-[#6B7088]">
-            <span>Data diperbarui secara realtime dari backend database.</span>
+            <span>Data diperbarui secara realtime dari database backend.</span>
             <Link
               href="/orders"
               className="text-[#181F4B] font-semibold hover:text-[#C9A876] transition flex items-center gap-1 font-albert"
