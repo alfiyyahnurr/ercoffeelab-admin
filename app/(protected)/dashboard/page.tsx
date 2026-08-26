@@ -309,15 +309,15 @@ export default function DashboardPage() {
       {/* Main Grid: Time Performance Tracker & Quick Recent Orders */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Time Performance Tracker Chart (2 cols) */}
-        <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-[#E7E8F0] shadow-xs flex flex-col justify-between">
+        <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-[#E7E8F0] shadow-xs flex flex-col justify-between min-h-[460px] max-h-[520px]">
           {/* Tracker Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
             <div>
               <h2 className="text-lg font-bold font-albert text-[#181F4B]">
                 Time Performance Tracker
               </h2>
               <p className="text-xs text-[#6B7088] mt-0.5">
-                Mode {appliedRange === 'daily' ? 'harian (7 hari)' : appliedRange === 'weekly' ? 'mingguan (4 minggu)' : appliedRange === 'monthly' ? 'bulanan (12 bulan)' : 'tahunan (5 tahun)'}: statistik omset per kategori produk + total omset ({activeOutletName}).
+                Mode {appliedRange === 'daily' ? 'harian (7 hari)' : appliedRange === 'weekly' ? 'mingguan (4 minggu)' : appliedRange === 'monthly' ? 'bulanan (12 bulan)' : 'tahunan (5 tahun)'}: statistik omset per kategori + total omset ({activeOutletName}).
               </p>
             </div>
 
@@ -348,7 +348,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Category Color Legends (Matching reference image) */}
-          <div className="flex flex-wrap items-center gap-4 mb-6 text-xs text-[#6B7088] font-medium">
+          <div className="flex flex-wrap items-center gap-4 mb-4 text-xs text-[#6B7088] font-medium">
             {CATEGORY_COLORS.map((cat) => (
               <div key={cat.key} className="flex items-center gap-2">
                 <span className={`w-3.5 h-3.5 rounded-sm ${cat.color}`} />
@@ -357,13 +357,13 @@ export default function DashboardPage() {
             ))}
           </div>
 
-          {/* Main Chart Canvas with Dynamic Y-Axis Ticks & Multi-Bar Columns */}
-          <div className="relative pt-4 pb-2 border-b border-[#E7E8F0]">
+          {/* Main Chart Canvas with Fixed Dynamic Y-Axis Ticks & Multi-Bar Columns */}
+          <div className="relative pt-4 pb-2 border-b border-[#E7E8F0] h-[270px] flex flex-col justify-end">
             {/* Background Y-Axis Ticks & Grid Lines */}
             <div className="absolute inset-0 flex flex-col justify-between pointer-events-none pb-8 pr-2">
               {yTicks.map((tick, idx) => (
                 <div key={idx} className="flex items-center justify-between w-full">
-                  <span className="text-[10px] font-mono text-[#A0A5BD] w-24 shrink-0">
+                  <span className="text-[10px] font-mono text-[#A0A5BD] w-20 shrink-0 truncate">
                     {formatRupiah(tick)}
                   </span>
                   <div className="w-full border-t border-[#E7E8F0]/70" />
@@ -372,7 +372,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Multi-Bar Groups Rendering */}
-            <div className="relative pl-24 h-64 flex items-end justify-between gap-3 pt-6">
+            <div className="relative pl-20 h-56 flex items-end justify-between gap-2 overflow-x-auto scrollbar-none">
               {trendList.length > 0 ? (
                 trendList.map((item, idx) => {
                   const coffeeVal = item.coffeeRevenue || 0;
