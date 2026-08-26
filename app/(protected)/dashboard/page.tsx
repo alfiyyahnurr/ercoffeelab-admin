@@ -327,7 +327,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Main Chart Canvas with Fixed Dynamic Y-Axis Ticks & Theme-Matched Single Bar Columns */}
-          <div className="relative pt-4 pb-2 border-b border-[#E7E8F0] h-[270px] flex flex-col justify-end">
+          <div className="relative pt-12 pb-2 border-b border-[#E7E8F0] h-[290px] flex flex-col justify-end">
             {/* Background Y-Axis Ticks & Grid Lines */}
             <div className="absolute inset-0 flex flex-col justify-between pointer-events-none pb-8 pr-2">
               {yTicks.map((tick, idx) => (
@@ -341,18 +341,18 @@ export default function DashboardPage() {
             </div>
 
             {/* Theme-Matched Single Bar Columns (No category split, clean theme colors, empty when 0, hover nominal) */}
-            <div className="relative pl-20 h-56 flex items-end justify-between gap-3 overflow-x-auto scrollbar-none">
+            <div className="relative pl-20 h-56 flex items-end justify-between gap-3 overflow-x-visible">
               {trendList.length > 0 ? (
                 trendList.map((item, idx) => {
                   const revVal = item.revenue || 0;
                   const heightPercent = revVal > 0
-                    ? Math.max(6, Math.round((revVal / maxRevenue) * 100))
+                    ? Math.max(8, Math.round((revVal / maxRevenue) * 100))
                     : 0; // Empty when 0 data!
 
                   return (
                     <div key={idx} className="flex-1 h-full flex flex-col items-center justify-end group relative z-10">
                       {/* Hover Popover Box matching screenshot 1:1 */}
-                      <div className="absolute -top-16 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 group-hover:-translate-y-1 transition-all duration-200 bg-[#1E202B] text-white p-2.5 rounded-xl shadow-2xl border border-[#3B4B8C]/40 pointer-events-none whitespace-nowrap z-30 flex flex-col gap-1 min-w-[140px]">
+                      <div className="absolute -top-14 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 group-hover:-translate-y-1 transition-all duration-200 bg-[#1E202B] text-white p-2.5 rounded-xl shadow-2xl border border-[#3B4B8C]/40 pointer-events-none whitespace-nowrap z-50 flex flex-col gap-1 min-w-[145px]">
                         <p className="text-xs font-bold font-albert border-b border-[#3B4B8C]/40 pb-1 text-white">
                           {item.displayLabel || item.date}
                         </p>
@@ -364,19 +364,17 @@ export default function DashboardPage() {
 
                       {/* Single Bar Column with Theme Color Gradient */}
                       <div className="w-full max-w-[36px] flex flex-col justify-end h-48 relative">
-                        {/* Static nominal label ALWAYS visible directly above bar */}
-                        {revVal > 0 && (
-                          <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-[10px] font-bold font-mono text-[#181F4B] whitespace-nowrap z-20">
-                            {formatShortRupiah(revVal)}
-                          </span>
-                        )}
-
                         {/* Render bar ONLY if height > 0 (completely empty when 0 data!) */}
                         {heightPercent > 0 && (
                           <div
-                            className="w-full rounded-t-xl bg-gradient-to-t from-[#181F4B] to-[#3B4B8C] group-hover:from-[#C9A876] group-hover:to-[#b3915f] group-hover:shadow-md transition-all duration-300"
+                            className="w-full rounded-t-xl bg-gradient-to-t from-[#181F4B] to-[#3B4B8C] group-hover:from-[#C9A876] group-hover:to-[#b3915f] group-hover:shadow-md transition-all duration-300 relative"
                             style={{ height: `${heightPercent}%` }}
-                          />
+                          >
+                            {/* Static nominal label ALWAYS visible anchored directly on top edge of bar */}
+                            <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-[10px] font-bold font-mono text-[#181F4B] bg-white/80 backdrop-blur-2xs px-1 rounded shadow-2xs whitespace-nowrap z-20">
+                              {formatShortRupiah(revVal)}
+                            </span>
+                          </div>
                         )}
                       </div>
 
