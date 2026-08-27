@@ -123,26 +123,35 @@ export default function DashboardPage() {
     return <span className="text-[11px] font-semibold text-red">UNPAID</span>;
   };
 
-  // Dynamic Y-Axis scale step calculation based on appliedRange
+  // Mathematical Clean Dynamic Y-Axis scale calculation per range mode
   const trendList = stats?.dailySalesTrend || [];
   const rawMaxRevenue = Math.max(...trendList.map((item) => item.revenue), 0);
 
-  let step = 1000000; // Default 1jt for daily
+  let baseStep = 50000;
   if (appliedRange === 'weekly') {
-    step = 5000000; // 5jt for weekly
+    baseStep = 1000000;
   } else if (appliedRange === 'monthly') {
-    step = 25000000; // 25jt for monthly
+    baseStep = 5000000;
   } else if (appliedRange === 'yearly') {
-    step = 250000000; // 250jt for yearly
+    baseStep = 50000000;
   }
 
-  if (rawMaxRevenue > 0 && rawMaxRevenue < step) {
-    step = Math.max(50000, Math.ceil(rawMaxRevenue / 4 / 50000) * 50000);
+  const stepCount = 4;
+  let tickInterval = baseStep;
+
+  if (rawMaxRevenue > 0) {
+    const targetMax = rawMaxRevenue * 1.2;
+    const rawInterval = targetMax / stepCount;
+    const magnitude = Math.pow(10, Math.floor(Math.log10(rawInterval)));
+    const residual = rawInterval / magnitude;
+    if (residual <= 1) tickInterval = magnitude;
+    else if (residual <= 2) tickInterval = 2 * magnitude;
+    else if (residual <= 2.5) tickInterval = 2.5 * magnitude;
+    else if (residual <= 5) tickInterval = 5 * magnitude;
+    else tickInterval = 10 * magnitude;
   }
 
-  const maxScale = rawMaxRevenue > 0
-    ? Math.max(step * 4, Math.ceil((rawMaxRevenue * 1.15) / step) * step)
-    : step * 4;
+  const maxScale = Math.max(baseStep * stepCount, tickInterval * stepCount);
 
   const yTicks = [
     maxScale,
@@ -342,10 +351,10 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Main Chart Canvas with Perfectly Aligned Dynamic Y-Axis Grid Ticks & Bars */}
-          <div className="relative pt-6 pb-2 border-b border-[#E7E8F0] h-[280px] flex flex-col justify-end">
-            {/* Background Y-Axis Ticks & Grid Lines aligned 1:1 with bar canvas height */}
-            <div className="absolute left-0 right-0 top-8 h-[192px] flex flex-col justify-between pointer-events-none">
+          {/* Main Chart Canvas Container (Height & Positioning Shared 1:1) */}
+          <div className="relative border-b border-[#E7E8F0] h-[240px] pt-4 pb-6">
+            {/* Background Y-Axis Grid Lines & Tick Labels (Exact top-4 bottom-6 canvas) */}
+            <div className="absolute inset-x-0 top-4 bottom-6 flex flex-col justify-between pointer-events-none">
               {yTicks.map((tick, idx) => (
                 <div key={idx} className="flex items-center justify-between w-full">
                   <span className="text-[10px] font-mono text-[#A0A5BD] w-20 shrink-0 truncate">
@@ -356,13 +365,13 @@ export default function DashboardPage() {
               ))}
             </div>
 
-            {/* Single Bar Columns (Matching scale 1:1 with Y-Axis grid lines) */}
-            <div className="relative pl-20 h-[192px] mb-8 flex items-end justify-between gap-3 overflow-x-visible">
+            {/* Single Bar Columns (Exact top-4 bottom-6 canvas, matching Y-ticks 1:1) */}
+            <div className="absolute left-20 right-0 top-4 bottom-6 flex items-end justify-between gap-3 overflow-x-visible">
               {trendList.length > 0 ? (
                 trendList.map((item, idx) => {
                   const revVal = item.revenue || 0;
                   const heightPercent = revVal > 0
-                    ? Math.min(100, Math.max(4, Math.round((revVal / maxScale) * 100)))
+                    ? Math.min(100, Math.round((revVal / maxScale) * 100))
                     : 0; // Empty when 0 data!
 
                   return (
@@ -395,7 +404,7 @@ export default function DashboardPage() {
                       </div>
 
                       {/* X-Axis Label */}
-                      <span className="absolute -bottom-7 text-[11px] font-medium text-[#6B7088] font-source truncate max-w-[60px] text-center group-hover:text-[#181F4B] group-hover:font-bold transition">
+                      <span className="absolute -bottom-6 text-[11px] font-medium text-[#6B7088] font-source truncate max-w-[60px] text-center group-hover:text-[#181F4B] group-hover:font-bold transition">
                         {item.displayLabel || item.date?.slice(5)}
                       </span>
                     </div>
