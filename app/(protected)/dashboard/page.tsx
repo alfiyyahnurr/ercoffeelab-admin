@@ -123,16 +123,32 @@ export default function DashboardPage() {
     return <span className="text-[11px] font-semibold text-red">UNPAID</span>;
   };
 
-  // Compute dynamic Y-Axis scale for chart grid
+  // Dynamic Y-Axis scale step calculation based on appliedRange
   const trendList = stats?.dailySalesTrend || [];
-  const maxRevenue = Math.max(...trendList.map((item) => item.revenue), 100000);
+  const rawMaxRevenue = Math.max(...trendList.map((item) => item.revenue), 0);
 
-  // Generate 5 Y-Axis tick steps
+  let step = 1000000; // Default 1jt for daily
+  if (appliedRange === 'weekly') {
+    step = 5000000; // 5jt for weekly
+  } else if (appliedRange === 'monthly') {
+    step = 25000000; // 25jt for monthly
+  } else if (appliedRange === 'yearly') {
+    step = 250000000; // 250jt for yearly
+  }
+
+  if (rawMaxRevenue > 0 && rawMaxRevenue < step) {
+    step = Math.max(50000, Math.ceil(rawMaxRevenue / 4 / 50000) * 50000);
+  }
+
+  const maxScale = rawMaxRevenue > 0
+    ? Math.max(step * 4, Math.ceil((rawMaxRevenue * 1.15) / step) * step)
+    : step * 4;
+
   const yTicks = [
-    maxRevenue,
-    maxRevenue * 0.75,
-    maxRevenue * 0.5,
-    maxRevenue * 0.25,
+    maxScale,
+    maxScale * 0.75,
+    maxScale * 0.5,
+    maxScale * 0.25,
     0,
   ];
 
@@ -296,7 +312,7 @@ export default function DashboardPage() {
                 Time Performance Tracker
               </h2>
               <p className="text-xs text-[#6B7088] mt-0.5">
-                Mode {appliedRange === 'daily' ? 'harian (7 hari)' : appliedRange === 'weekly' ? 'mingguan (4 minggu)' : appliedRange === 'monthly' ? 'bulanan (12 bulan)' : 'tahunan (5 tahun)'}: statistik omset pendapatan keseluruhan ({activeOutletName}).
+                Mode {appliedRange === 'daily' ? 'harian (7 hari)' : appliedRange === 'weekly' ? 'mingguan (4 minggu)' : appliedRange === 'monthly' ? 'bulanan (12 bulan)' : 'tahunan (5 tahun)'}: omset pesanan lunas & selesai ({activeOutletName}).
               </p>
             </div>
 
@@ -326,10 +342,10 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Main Chart Canvas with Fixed Dynamic Y-Axis Ticks & Theme-Matched Single Bar Columns */}
-          <div className="relative pt-12 pb-2 border-b border-[#E7E8F0] h-[290px] flex flex-col justify-end">
-            {/* Background Y-Axis Ticks & Grid Lines */}
-            <div className="absolute inset-0 flex flex-col justify-between pointer-events-none pb-8 pr-2">
+          {/* Main Chart Canvas with Perfectly Aligned Dynamic Y-Axis Grid Ticks & Bars */}
+          <div className="relative pt-6 pb-2 border-b border-[#E7E8F0] h-[280px] flex flex-col justify-end">
+            {/* Background Y-Axis Ticks & Grid Lines aligned 1:1 with bar canvas height */}
+            <div className="absolute left-0 right-0 top-8 h-[192px] flex flex-col justify-between pointer-events-none">
               {yTicks.map((tick, idx) => (
                 <div key={idx} className="flex items-center justify-between w-full">
                   <span className="text-[10px] font-mono text-[#A0A5BD] w-20 shrink-0 truncate">
@@ -340,19 +356,19 @@ export default function DashboardPage() {
               ))}
             </div>
 
-            {/* Theme-Matched Single Bar Columns (No category split, clean theme colors, empty when 0, hover nominal) */}
-            <div className="relative pl-20 h-56 flex items-end justify-between gap-3 overflow-x-visible">
+            {/* Single Bar Columns (Matching scale 1:1 with Y-Axis grid lines) */}
+            <div className="relative pl-20 h-[192px] mb-8 flex items-end justify-between gap-3 overflow-x-visible">
               {trendList.length > 0 ? (
                 trendList.map((item, idx) => {
                   const revVal = item.revenue || 0;
                   const heightPercent = revVal > 0
-                    ? Math.max(8, Math.round((revVal / maxRevenue) * 100))
+                    ? Math.min(100, Math.max(4, Math.round((revVal / maxScale) * 100)))
                     : 0; // Empty when 0 data!
 
                   return (
                     <div key={idx} className="flex-1 h-full flex flex-col items-center justify-end group relative z-10">
                       {/* Hover Popover Box matching screenshot 1:1 */}
-                      <div className="absolute -top-14 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 group-hover:-translate-y-1 transition-all duration-200 bg-[#1E202B] text-white p-2.5 rounded-xl shadow-2xl border border-[#3B4B8C]/40 pointer-events-none whitespace-nowrap z-50 flex flex-col gap-1 min-w-[145px]">
+                      <div className="absolute -top-16 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 group-hover:-translate-y-1 transition-all duration-200 bg-[#1E202B] text-white p-2.5 rounded-xl shadow-2xl border border-[#3B4B8C]/40 pointer-events-none whitespace-nowrap z-50 flex flex-col gap-1 min-w-[145px]">
                         <p className="text-xs font-bold font-albert border-b border-[#3B4B8C]/40 pb-1 text-white">
                           {item.displayLabel || item.date}
                         </p>
@@ -363,7 +379,7 @@ export default function DashboardPage() {
                       </div>
 
                       {/* Single Bar Column with Theme Color Gradient */}
-                      <div className="w-full max-w-[36px] flex flex-col justify-end h-48 relative">
+                      <div className="w-full max-w-[36px] flex flex-col justify-end h-full relative">
                         {/* Render bar ONLY if height > 0 (completely empty when 0 data!) */}
                         {heightPercent > 0 && (
                           <div
@@ -371,7 +387,7 @@ export default function DashboardPage() {
                             style={{ height: `${heightPercent}%` }}
                           >
                             {/* Static nominal label ALWAYS visible anchored directly on top edge of bar */}
-                            <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-[10px] font-bold font-mono text-[#181F4B] bg-white/80 backdrop-blur-2xs px-1 rounded shadow-2xs whitespace-nowrap z-20">
+                            <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-[10px] font-bold font-mono text-[#181F4B] bg-white/80 backdrop-blur-2xs px-1.5 py-0.5 rounded shadow-2xs whitespace-nowrap z-20">
                               {formatShortRupiah(revVal)}
                             </span>
                           </div>
@@ -379,7 +395,7 @@ export default function DashboardPage() {
                       </div>
 
                       {/* X-Axis Label */}
-                      <span className="text-[11px] font-medium text-[#6B7088] mt-2 font-source truncate max-w-[60px] text-center group-hover:text-[#181F4B] group-hover:font-bold transition">
+                      <span className="absolute -bottom-7 text-[11px] font-medium text-[#6B7088] font-source truncate max-w-[60px] text-center group-hover:text-[#181F4B] group-hover:font-bold transition">
                         {item.displayLabel || item.date?.slice(5)}
                       </span>
                     </div>
