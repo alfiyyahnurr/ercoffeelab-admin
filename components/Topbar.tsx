@@ -194,7 +194,7 @@ export default function Topbar({
 
   return (
     <header className="h-16 bg-white/95 backdrop-blur-md border-b border-[#E7E8F0] px-6 flex items-center justify-between sticky top-0 z-20 font-source shadow-xs">
-      {/* Left Section: Sidebar Toggle + Outlet Switcher */}
+      {/* Left Section: Sidebar Toggle + Brand Logo + Outlet Switcher */}
       <div className="flex items-center gap-3">
         <button
           onClick={onToggleCollapse}
@@ -208,9 +208,18 @@ export default function Topbar({
           )}
         </button>
 
+        {/* Brand Logo in Topbar */}
+        <Link href="/dashboard" className="flex items-center hover:opacity-90 transition shrink-0">
+          <img
+            src="/logo.png"
+            alt="ER CoffeeLab"
+            className="h-7 w-auto max-w-[130px] object-contain shrink-0"
+          />
+        </Link>
+
         {/* Outlet Selector / Lock Badge */}
         {activeRole === 'super_admin' ? (
-          <div className="relative flex items-center">
+          <div className="relative flex items-center ml-1">
             <Globe className="w-3.5 h-3.5 absolute left-3 text-[#C9A876] pointer-events-none" />
             <select
               value={selectedOutletId ?? 'all'}
@@ -230,7 +239,7 @@ export default function Topbar({
             <ChevronDown className="w-3.5 h-3.5 absolute right-2.5 text-[#6B7088] pointer-events-none" />
           </div>
         ) : activeRole === 'outlet_admin' ? (
-          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#EDF0FA] border border-[#D2D9F3] text-xs font-bold text-[#3B4B8C] font-albert shadow-2xs">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#EDF0FA] border border-[#D2D9F3] text-xs font-bold text-[#3B4B8C] font-albert shadow-2xs ml-1">
             <Store className="w-3.5 h-3.5 text-[#3B4B8C]" />
             <span>{assignedOutlet.name}</span>
           </div>
