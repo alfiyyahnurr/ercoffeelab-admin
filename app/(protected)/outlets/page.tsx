@@ -401,6 +401,13 @@ export default function OutletsGovernancePage() {
                       </div>
                     )}
 
+                    {outlet.phone && (
+                      <div className="flex items-center gap-2">
+                        <Phone className="w-4 h-4 text-[#C9A876] shrink-0" />
+                        <span>{outlet.phone}</span>
+                      </div>
+                    )}
+
                     {(outlet.latitude !== undefined && outlet.latitude !== null) && (
                       <div className="flex items-center gap-2 text-[11px] font-mono text-[#6B7088]">
                         <Navigation className="w-3.5 h-3.5 text-[#C9A876] shrink-0" />
