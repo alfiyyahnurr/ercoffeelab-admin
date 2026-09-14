@@ -197,8 +197,9 @@ export default function DashboardPage() {
             <h3 className="text-xl font-bold font-albert text-[#181F4B]">
               {loading ? <Skeleton className="h-6 w-28" /> : formatRupiah(stats?.todayRevenue || 0)}
             </h3>
-            <p className="text-[10.5px] text-[#3E8A5A] font-semibold mt-0.5 flex items-center gap-1">
-              <span>●</span> Transaksi berstatus Lunas (Paid)
+            <p className="text-[10.5px] text-[#3E8A5A] font-semibold mt-0.5 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#3E8A5A]" />
+              <span>Transaksi berstatus Lunas (Paid)</span>
             </p>
           </div>
         </div>

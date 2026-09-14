@@ -28,6 +28,7 @@ import {
   markOrderAsRead,
   markAllOrdersAsRead,
 } from '@/lib/notifications';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 export interface OutletOption {
   id: number;
@@ -71,6 +72,8 @@ export default function Topbar({
   const [searchQuery, setSearchQuery] = useState('');
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showNotifMenu, setShowNotifMenu] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   // Notifications State
   const [recentOrdersNotif, setRecentOrdersNotif] = useState<OrderNotifItem[]>([]);
@@ -193,7 +196,8 @@ export default function Topbar({
     : assignedOutlet.name;
 
   return (
-    <header className="h-16 bg-white/95 backdrop-blur-md border-b border-[#E7E8F0] px-6 flex items-center justify-between sticky top-0 z-20 font-source shadow-xs">
+    <>
+      <header className="h-16 bg-white/95 backdrop-blur-md border-b border-[#E7E8F0] px-6 flex items-center justify-between sticky top-0 z-20 font-source shadow-xs">
       {/* Left Section: Sidebar Toggle + Brand Logo */}
       <div className="flex items-center gap-3.5">
         <button
@@ -419,27 +423,55 @@ export default function Topbar({
             <ChevronDown className="w-3.5 h-3.5 text-[#6B7088]" />
           </button>
 
-          {/* Profile Popover Menu */}
-          {showProfileMenu && (
-            <div className="absolute right-0 mt-2 w-48 bg-white border border-[#E7E8F0] rounded-2xl shadow-xl py-2 z-50 animate-in fade-in slide-in-from-top-2">
-              <div className="px-4 py-2 border-b border-[#E7E8F0]">
-                <p className="text-xs font-bold font-albert text-[#1E202B]">
-                  {staff?.fullName}
-                </p>
-                <p className="text-[10px] text-[#6B7088] truncate">{staff?.email}</p>
-              </div>
+            {/* Profile Popover Menu */}
+            {showProfileMenu && (
+              <div className="absolute right-0 mt-2 w-52 bg-white border border-[#E7E8F0] rounded-2xl shadow-xl py-2 z-50 animate-in fade-in slide-in-from-top-2">
+                <div className="px-4 py-2.5 border-b border-[#E7E8F0] bg-[#FAFAFD]">
+                  <p className="text-xs font-bold font-albert text-[#181F4B]">
+                    {staff?.fullName}
+                  </p>
+                  <p className="text-[10px] text-[#6B7088] truncate">{staff?.email}</p>
+                </div>
 
-              <button
-                onClick={handleLogout}
-                className="w-full text-left px-4 py-2.5 text-xs text-[#C9576B] hover:bg-[#FDF0F2] flex items-center gap-2 font-medium transition cursor-pointer"
-              >
-                <LogOut className="w-4 h-4 text-[#C9576B]" />
-                <span>Keluar Akun</span>
-              </button>
-            </div>
-          )}
+                <Link
+                  href="/profile"
+                  onClick={() => setShowProfileMenu(false)}
+                  className="w-full text-left px-4 py-2.5 text-xs text-[#181F4B] hover:bg-[#F4F5F9] flex items-center gap-2 font-bold font-albert transition cursor-pointer"
+                >
+                  <Coffee className="w-3.5 h-3.5 text-[#C9A876]" />
+                  <span>Profil & Akun Saya</span>
+                </Link>
+
+                <div className="border-t border-[#E7E8F0] my-1" />
+
+                <button
+                  onClick={() => {
+                    setShowProfileMenu(false);
+                    setShowLogoutConfirm(true);
+                  }}
+                  className="w-full text-left px-4 py-2 text-xs text-[#C9576B] hover:bg-[#FDF0F2] flex items-center gap-2 font-bold font-albert transition cursor-pointer"
+                >
+                  <LogOut className="w-3.5 h-3.5 text-[#C9576B]" />
+                  <span>Keluar Akun</span>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
-    </header>
+      </header>
+
+      {/* Logout Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={showLogoutConfirm}
+        onClose={() => setShowLogoutConfirm(false)}
+        onConfirm={handleLogout}
+        title="Konfirmasi Keluar Akun"
+        message="Apakah Anda yakin ingin keluar dari sesi panel admin ERCoffeeLab saat ini?"
+        confirmLabel="Ya, Keluar Akun"
+        cancelLabel="Batal"
+        variant="danger"
+        loading={loggingOut}
+      />
+    </>
   );
 }

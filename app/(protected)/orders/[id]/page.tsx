@@ -418,7 +418,7 @@ export default function OrderDetailPage({
                       : 'bg-[#FEF6E6] text-[#C9A876]'
                   }`}
                 >
-                  {order.fulfillmentType === 'delivery' ? '🛵 Pengantaran (Delivery)' : '☕ Ambil Sendiri (Pickup)'}
+                  {order.fulfillmentType === 'delivery' ? 'Pengantaran (Delivery)' : 'Ambil Sendiri (Pickup)'}
                 </span>
               </div>
 

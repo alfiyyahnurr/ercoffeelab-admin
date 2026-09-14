@@ -333,7 +333,7 @@ export default function OrdersPage() {
                             : 'bg-[#FEF6E6] text-[#C9A876]'
                         }`}
                       >
-                        {order.fulfillmentType === 'delivery' ? '🛵 Delivery' : '☕ Pickup'}
+                        {order.fulfillmentType === 'delivery' ? 'Delivery' : 'Pickup'}
                       </span>
                     </TableCell>
 
