@@ -21,7 +21,18 @@ import {
   XCircle,
   Info,
   Navigation,
+  Truck,
+  Trash2,
+  Settings,
 } from 'lucide-react';
+
+interface DeliveryTierItem {
+  id?: number;
+  minDistanceKm: number;
+  maxDistanceKm: number;
+  fee: number;
+  isActive: boolean;
+}
 
 interface OutletItem {
   id: number;
@@ -34,6 +45,9 @@ interface OutletItem {
   isOpen: boolean;
   latitude?: number | null;
   longitude?: number | null;
+  deliveryFee?: number;
+  maxDeliveryDistanceKm?: number;
+  isDeliveryEnabled?: boolean;
 }
 
 export default function OutletsGovernancePage() {
@@ -63,6 +77,15 @@ export default function OutletsGovernancePage() {
   const [formIsOpen, setFormIsOpen] = useState(true);
   const [formLat, setFormLat] = useState('');
   const [formLng, setFormLng] = useState('');
+
+  // Delivery Settings Modal State
+  const [deliveryModalOpen, setDeliveryModalOpen] = useState(false);
+  const [selectedOutletForDelivery, setSelectedOutletForDelivery] = useState<OutletItem | null>(null);
+  const [deliveryMaxKm, setDeliveryMaxKm] = useState<number>(10);
+  const [deliveryEnabled, setDeliveryEnabled] = useState<boolean>(true);
+  const [tiersList, setTiersList] = useState<DeliveryTierItem[]>([]);
+  const [loadingTiers, setLoadingTiers] = useState(false);
+  const [savingTiers, setSavingTiers] = useState(false);
 
   useEffect(() => {
     const token = getStoredToken();
@@ -126,6 +149,88 @@ export default function OutletsGovernancePage() {
     setError(null);
     setInfoMessage(null);
     setModalOpen(true);
+  };
+
+  const openDeliveryModal = async (outlet: OutletItem) => {
+    setSelectedOutletForDelivery(outlet);
+    setDeliveryMaxKm(outlet.maxDeliveryDistanceKm ?? 10);
+    setDeliveryEnabled(outlet.isDeliveryEnabled ?? true);
+    setDeliveryModalOpen(true);
+    setLoadingTiers(true);
+    setError(null);
+
+    try {
+      const res = await apiFetch<{ data: DeliveryTierItem[] }>(`/api/outlets/${outlet.id}/delivery-tiers`);
+      if (Array.isArray(res?.data) && res.data.length > 0) {
+        setTiersList(res.data);
+      } else {
+        // Default template tiers if none exist
+        setTiersList([
+          { minDistanceKm: 0, maxDistanceKm: 5, fee: 10000, isActive: true },
+          { minDistanceKm: 5.01, maxDistanceKm: 10, fee: 15000, isActive: true },
+        ]);
+      }
+    } catch (err: any) {
+      console.error('Failed to load delivery tiers:', err);
+      setTiersList([
+        { minDistanceKm: 0, maxDistanceKm: 5, fee: 10000, isActive: true },
+        { minDistanceKm: 5.01, maxDistanceKm: 10, fee: 15000, isActive: true },
+      ]);
+    } finally {
+      setLoadingTiers(false);
+    }
+  };
+
+  const addTierRow = () => {
+    const lastTier = tiersList[tiersList.length - 1];
+    const newMin = lastTier ? Math.round((lastTier.maxDistanceKm + 0.01) * 100) / 100 : 0;
+    const newMax = Math.round((newMin + 5) * 100) / 100;
+    const newFee = lastTier ? lastTier.fee + 5000 : 10000;
+
+    setTiersList((prev) => [
+      ...prev,
+      { minDistanceKm: newMin, maxDistanceKm: newMax, fee: newFee, isActive: true },
+    ]);
+  };
+
+  const updateTierRow = (index: number, field: keyof DeliveryTierItem, value: any) => {
+    setTiersList((prev) =>
+      prev.map((t, i) => (i === index ? { ...t, [field]: value } : t))
+    );
+  };
+
+  const removeTierRow = (index: number) => {
+    setTiersList((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSaveDeliveryTiers = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!selectedOutletForDelivery) return;
+
+    if (tiersList.length === 0) {
+      alert('Minimal harus memiliki 1 tier ongkos kirim delivery.');
+      return;
+    }
+
+    setSavingTiers(true);
+    try {
+      await apiFetch(`/api/outlets/${selectedOutletForDelivery.id}/delivery-tiers`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          maxDeliveryDistanceKm: deliveryMaxKm,
+          isDeliveryEnabled: deliveryEnabled,
+          tiers: tiersList,
+        }),
+      });
+
+      setInfoMessage(`Pengaturan biaya delivery cabang "${selectedOutletForDelivery.name}" berhasil disimpan.`);
+      setDeliveryModalOpen(false);
+      await fetchOutlets();
+    } catch (err: any) {
+      alert(err?.message || 'Gagal menyimpan pengaturan delivery');
+    } finally {
+      setSavingTiers(false);
+    }
   };
 
   const handleToggleOperating = async (outlet: OutletItem) => {
@@ -420,13 +525,21 @@ export default function OutletsGovernancePage() {
                 </div>
 
                 {/* Card Action Footer */}
-                <div className="pt-3 border-t border-[#E7E8F0] flex items-center justify-end gap-2">
+                <div className="pt-3 border-t border-[#E7E8F0] grid grid-cols-2 gap-2">
                   <button
                     onClick={() => openEditModal(outlet)}
-                    className="w-full py-2 px-3 bg-[#F4F5F9] hover:bg-[#E7E8F0] hover:border-[#C9A876] border border-[#E7E8F0] rounded-xl text-xs font-semibold text-[#181F4B] transition-all duration-150 font-albert flex items-center justify-center gap-1.5 cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
+                    className="py-2 px-3 bg-[#F4F5F9] hover:bg-[#E7E8F0] hover:border-[#C9A876] border border-[#E7E8F0] rounded-xl text-xs font-semibold text-[#181F4B] transition-all duration-150 font-albert flex items-center justify-center gap-1.5 cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
                   >
                     <Pencil className="w-3.5 h-3.5 text-[#C9A876]" />
-                    <span>Edit Informasi Outlet</span>
+                    <span>Edit Info</span>
+                  </button>
+
+                  <button
+                    onClick={() => openDeliveryModal(outlet)}
+                    className="py-2 px-3 bg-[#FEF6E6] hover:bg-[#FDF0D5] hover:border-[#C9A876] border border-[#F7E5C4] rounded-xl text-xs font-bold text-[#181F4B] transition-all duration-150 font-albert flex items-center justify-center gap-1.5 cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
+                  >
+                    <Truck className="w-3.5 h-3.5 text-[#C9A876]" />
+                    <span>Atur Delivery</span>
                   </button>
                 </div>
               </div>
@@ -440,7 +553,7 @@ export default function OutletsGovernancePage() {
         )}
       </div>
 
-      {/* Reusable Pagination matching reference image */}
+      {/* Reusable Pagination */}
       <div className="bg-white rounded-2xl border border-[#E7E8F0] shadow-xs overflow-hidden">
         <Pagination
           currentPage={currentPage}
@@ -599,6 +712,199 @@ export default function OutletsGovernancePage() {
                   className="px-5 py-2 bg-[#181F4B] hover:bg-[#0E1230] text-[#C9A876] font-bold text-xs rounded-xl transition shadow-md cursor-pointer hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
                 >
                   Simpan Outlet
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delivery Tier Settings Modal */}
+      {deliveryModalOpen && selectedOutletForDelivery && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center modal-backdrop p-4">
+          <div className="bg-white rounded-3xl p-6 max-w-2xl w-full shadow-2xl space-y-5 border border-[#E7E8F0] animate-in fade-in max-h-[90vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="flex items-start justify-between border-b border-[#E7E8F0] pb-4">
+              <div>
+                <h3 className="font-bold text-base font-albert text-[#181F4B] flex items-center gap-2">
+                  <Truck className="w-5 h-5 text-[#C9A876]" />
+                  Pengaturan Biaya Delivery Berdasarkan Jarak
+                </h3>
+                <p className="text-xs text-[#6B7088] mt-0.5">
+                  Cabang: <strong className="text-[#181F4B]">{selectedOutletForDelivery.name}</strong> (ID: #{selectedOutletForDelivery.id})
+                </p>
+              </div>
+              <button
+                onClick={() => setDeliveryModalOpen(false)}
+                className="p-1.5 text-[#6B7088] hover:text-[#181F4B] rounded-xl hover:bg-[#F4F5F9] transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveDeliveryTiers} className="space-y-5">
+              {/* General Delivery Settings */}
+              <div className="p-4 rounded-2xl bg-[#FAFAFD] border border-[#E7E8F0] space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="text-xs font-bold text-[#181F4B] block">
+                      Layanan Pesan Antar (Delivery)
+                    </label>
+                    <p className="text-[11px] text-[#6B7088] mt-0.5">
+                      Aktifkan atau nonaktifkan penerimaan order delivery khusus di cabang ini.
+                    </p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={deliveryEnabled}
+                    onChange={(e) => setDeliveryEnabled(e.target.checked)}
+                    className="w-5 h-5 accent-[#C9A876] rounded cursor-pointer"
+                  />
+                </div>
+
+                <div className="pt-3 border-t border-[#E7E8F0]">
+                  <label className="text-xs font-bold text-[#181F4B] block mb-1">
+                    Batas Jarak Maksimal Pengiriman (Radius KM)
+                  </label>
+                  <div className="flex items-center gap-2 max-w-xs">
+                    <input
+                      type="number"
+                      step="0.5"
+                      min="1"
+                      max="100"
+                      value={deliveryMaxKm}
+                      onChange={(e) => setDeliveryMaxKm(parseFloat(e.target.value) || 10)}
+                      className="w-28 px-3 py-2 bg-white border border-[#E7E8F0] rounded-xl text-xs font-bold text-[#181F4B] focus:outline-none focus:border-[#C9A876]"
+                      required
+                    />
+                    <span className="text-xs font-bold text-[#6B7088]">Kilometer (KM)</span>
+                  </div>
+                  <p className="text-[11px] text-[#C9576B] mt-1.5 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3 shrink-0" />
+                    <span>Pelanggan dengan jarak lebih dari {deliveryMaxKm} km otomatis ditolak dan tidak dapat checkout delivery.</span>
+                  </p>
+                </div>
+              </div>
+
+              {/* Tier Pricing Table */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="text-xs font-bold font-albert text-[#181F4B]">
+                      Tingkatan Tarif Ongkir (Distance Tiers)
+                    </h4>
+                    <p className="text-[11px] text-[#6B7088]">
+                      Tentukan biaya ongkir otomatis berdasarkan rentang jarak kilometer.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={addTierRow}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#F6F3EC] hover:bg-[#EBE5D8] border border-[#C9A876]/40 rounded-xl text-xs font-bold text-[#181F4B] transition cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5 text-[#C9A876]" />
+                    <span>Tambah Baris Tier</span>
+                  </button>
+                </div>
+
+                {loadingTiers ? (
+                  <div className="py-8 text-center text-[#6B7088] text-xs">
+                    <div className="w-6 h-6 border-2 border-[#181F4B] border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+                    <span>Memuat aturan tier delivery...</span>
+                  </div>
+                ) : (
+                  <div className="border border-[#E7E8F0] rounded-2xl overflow-hidden shadow-2xs">
+                    <table className="w-full text-xs text-left">
+                      <thead className="bg-[#F8F9FD] border-b border-[#E7E8F0] text-[#181F4B] font-bold">
+                        <tr>
+                          <th className="py-2.5 px-3">Tier</th>
+                          <th className="py-2.5 px-3">Jarak Min (KM)</th>
+                          <th className="py-2.5 px-3">Jarak Maks (KM)</th>
+                          <th className="py-2.5 px-3">Tarif Ongkir (Rp)</th>
+                          <th className="py-2.5 px-3 text-center">Aksi</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[#E7E8F0]">
+                        {tiersList.map((tier, idx) => (
+                          <tr key={idx} className="hover:bg-[#FAFAFD] transition">
+                            <td className="py-2.5 px-3 font-bold text-[#6B7088]">
+                              Tier {idx + 1}
+                            </td>
+                            <td className="py-2.5 px-3">
+                              <input
+                                type="number"
+                                step="0.1"
+                                min="0"
+                                value={tier.minDistanceKm}
+                                onChange={(e) => updateTierRow(idx, 'minDistanceKm', parseFloat(e.target.value) || 0)}
+                                className="w-20 px-2 py-1 bg-white border border-[#E7E8F0] rounded-lg text-xs font-mono font-bold"
+                                required
+                              />
+                            </td>
+                            <td className="py-2.5 px-3">
+                              <input
+                                type="number"
+                                step="0.1"
+                                min="0.1"
+                                value={tier.maxDistanceKm}
+                                onChange={(e) => updateTierRow(idx, 'maxDistanceKm', parseFloat(e.target.value) || 0)}
+                                className="w-20 px-2 py-1 bg-white border border-[#E7E8F0] rounded-lg text-xs font-mono font-bold"
+                                required
+                              />
+                            </td>
+                            <td className="py-2.5 px-3">
+                              <div className="flex items-center gap-1">
+                                <span className="text-[11px] text-[#6B7088] font-semibold">Rp</span>
+                                <input
+                                  type="number"
+                                  step="1000"
+                                  min="0"
+                                  value={tier.fee}
+                                  onChange={(e) => updateTierRow(idx, 'fee', parseInt(e.target.value, 10) || 0)}
+                                  className="w-28 px-2 py-1 bg-white border border-[#E7E8F0] rounded-lg text-xs font-bold text-[#181F4B]"
+                                  required
+                                />
+                              </div>
+                            </td>
+                            <td className="py-2.5 px-3 text-center">
+                              <button
+                                type="button"
+                                onClick={() => removeTierRow(idx)}
+                                disabled={tiersList.length === 1}
+                                className="p-1 text-[#6B7088] hover:text-[#C9576B] rounded-lg hover:bg-[#FDF0F2] transition disabled:opacity-30 cursor-pointer"
+                                title="Hapus tier ini"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+
+              {/* Actions Footer */}
+              <div className="pt-4 border-t border-[#E7E8F0] flex items-center justify-end gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setDeliveryModalOpen(false)}
+                  className="px-4 py-2 bg-[#F4F5F9] hover:bg-[#E7E8F0] text-[#6B7088] font-bold text-xs rounded-xl transition cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingTiers}
+                  className="px-5 py-2 bg-[#181F4B] hover:bg-[#0E1230] text-[#C9A876] font-bold text-xs rounded-xl transition shadow-md cursor-pointer hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 flex items-center gap-1.5"
+                >
+                  {savingTiers ? (
+                    <div className="w-3.5 h-3.5 border-2 border-[#C9A876] border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                  )}
+                  <span>Simpan Pengaturan Delivery</span>
                 </button>
               </div>
             </form>
