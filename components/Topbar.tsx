@@ -194,8 +194,8 @@ export default function Topbar({
 
   return (
     <header className="h-16 bg-white/95 backdrop-blur-md border-b border-[#E7E8F0] px-6 flex items-center justify-between sticky top-0 z-20 font-source shadow-xs">
-      {/* Left Section: Sidebar Toggle + Brand Logo + Outlet Switcher */}
-      <div className="flex items-center gap-3">
+      {/* Left Section: Sidebar Toggle + Brand Logo */}
+      <div className="flex items-center gap-3.5">
         <button
           onClick={onToggleCollapse}
           className="p-2 rounded-xl text-[#6B7088] hover:text-[#181F4B] hover:bg-[#F4F5F9] transition cursor-pointer border border-[#E7E8F0]/60"
@@ -213,37 +213,9 @@ export default function Topbar({
           <img
             src="/logo.png"
             alt="ER CoffeeLab"
-            className="h-7 w-auto max-w-[130px] object-contain shrink-0"
+            className="h-8 w-auto max-w-[150px] object-contain shrink-0"
           />
         </Link>
-
-        {/* Outlet Selector / Lock Badge */}
-        {activeRole === 'super_admin' ? (
-          <div className="relative flex items-center ml-1">
-            <Globe className="w-3.5 h-3.5 absolute left-3 text-[#C9A876] pointer-events-none" />
-            <select
-              value={selectedOutletId ?? 'all'}
-              onChange={(e) => {
-                const val = e.target.value;
-                onSelectOutlet(val === 'all' ? null : Number(val));
-              }}
-              className="pl-8 pr-8 py-1.5 bg-[#F6F3EC] hover:bg-[#FAF6EF] border border-[#C9A876]/40 rounded-xl text-xs font-bold font-albert text-[#181F4B] focus:outline-none focus:border-[#C9A876] appearance-none cursor-pointer shadow-2xs transition"
-            >
-              <option value="all">Semua Outlet (Global)</option>
-              {outlets.map((outlet) => (
-                <option key={outlet.id} value={outlet.id}>
-                  {outlet.name}
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="w-3.5 h-3.5 absolute right-2.5 text-[#6B7088] pointer-events-none" />
-          </div>
-        ) : activeRole === 'outlet_admin' ? (
-          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#EDF0FA] border border-[#D2D9F3] text-xs font-bold text-[#3B4B8C] font-albert shadow-2xs ml-1">
-            <Store className="w-3.5 h-3.5 text-[#3B4B8C]" />
-            <span>{assignedOutlet.name}</span>
-          </div>
-        ) : null}
       </div>
 
       {/* Right Section: Search + Notifications + Profile */}

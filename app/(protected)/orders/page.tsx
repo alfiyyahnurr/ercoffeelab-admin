@@ -54,6 +54,8 @@ export default function OrdersPage() {
   const {
     staff,
     selectedOutletId,
+    setSelectedOutletId,
+    outlets,
     isSuperAdmin,
     activeOutletName,
   } = useOutletContext();
@@ -219,18 +221,39 @@ export default function OrdersPage() {
             }}
           />
 
-          {/* Search Box */}
-          <div className="pb-2.5 md:pb-0 w-full md:w-64">
-            <Input
-              placeholder="Cari order # / nama..."
-              value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
-                setCurrentPage(1);
-              }}
-              icon={<Search className="w-3.5 h-3.5" />}
-              className="h-8 text-xs"
-            />
+          {/* Controls: Outlet Filter (Super Admin) + Search Box */}
+          <div className="pb-2.5 md:pb-0 flex flex-wrap items-center gap-2 w-full md:w-auto">
+            {isSuperAdmin && (
+              <div className="w-full sm:w-44 shrink-0">
+                <select
+                  value={selectedOutletId ?? ''}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setSelectedOutletId(val ? Number(val) : null);
+                  }}
+                  className="select text-xs h-8 bg-white border-[#E7E8F0] font-semibold text-[#181F4B]"
+                >
+                  <option value="">Semua Outlet</option>
+                  {outlets.map((o) => (
+                    <option key={o.id} value={o.id}>
+                      {o.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+            <div className="w-full sm:w-56">
+              <Input
+                placeholder="Cari order # / nama..."
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setCurrentPage(1);
+                }}
+                icon={<Search className="w-3.5 h-3.5" />}
+                className="h-8 text-xs"
+              />
+            </div>
           </div>
         </div>
 

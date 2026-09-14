@@ -148,7 +148,27 @@ export default function DashboardPage() {
         </div>
 
         {/* Action Controls */}
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2.5">
+          {isSuperAdmin && (
+            <div className="w-48 sm:w-56">
+              <select
+                value={selectedOutletId ?? ''}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setSelectedOutletId(val ? Number(val) : null);
+                }}
+                className="select text-xs h-8 bg-[#F4F5F9] border-[#E7E8F0] font-semibold text-[#181F4B]"
+              >
+                <option value="">Semua Outlet (Global)</option>
+                {outlets.map((o) => (
+                  <option key={o.id} value={o.id}>
+                    {o.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
           <Button
             variant="secondary"
             size="sm"
