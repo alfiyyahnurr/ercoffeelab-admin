@@ -136,35 +136,42 @@ export default function Sidebar({
       }`}
     >
       {/* Top Brand & Profile Header Section */}
-      <div className="h-16 border-b border-[#232B66]/60 flex items-center justify-between px-3.5 shrink-0 bg-[#0A0D24]">
+      <div className="h-16 border-b border-[#232B66]/60 flex items-center justify-between px-3 shrink-0 bg-[#0A0D24]">
         {collapsed ? (
           <div className="w-full flex items-center justify-center">
             <div
-              className="w-10 h-10 rounded-xl bg-[#181F4B] border border-[#C9A876]/40 flex items-center justify-center text-[#C9A876] shadow-sm cursor-pointer hover:scale-105 transition"
+              className="w-10 h-10 rounded-xl bg-white border border-[#C9A876]/50 flex items-center justify-center p-1 shadow-sm cursor-pointer hover:scale-105 transition"
               onClick={onToggleCollapse}
-              title="Expand Sidebar"
+              title="Buka Sidebar"
             >
-              <Coffee className="w-5 h-5 text-[#C9A876]" />
+              <img
+                src="/logo.png"
+                alt="ER"
+                className="h-6 w-auto object-contain"
+              />
             </div>
           </div>
         ) : (
-          <div className="flex items-center gap-3 overflow-hidden w-full">
-            <div className="w-9 h-9 rounded-xl bg-[#181F4B] border border-[#C9A876]/40 flex items-center justify-center shrink-0 text-[#C9A876] shadow-sm">
-              <Coffee className="w-5 h-5 text-[#C9A876]" />
-            </div>
-            <div className="overflow-hidden flex-1 min-h-[36px] flex flex-col justify-center">
-              <p className="text-[13px] font-bold font-albert text-white tracking-wider truncate leading-tight">
-                ER COFFEE LAB
-              </p>
-              <p className="text-[10px] font-semibold text-[#C9A876] uppercase tracking-widest truncate mt-0.5 leading-tight">
-                {isSuperAdmin ? 'Enterprise CMS' : 'Outlet Panel'}
-              </p>
-            </div>
+          <div className="flex items-center justify-between w-full">
+            <Link href="/dashboard" className="flex items-center gap-2 overflow-hidden flex-1 group">
+              <div className="h-9 px-2 rounded-xl bg-white border border-[#C9A876]/50 flex items-center justify-center shadow-sm">
+                <img
+                  src="/logo.png"
+                  alt="ER CoffeeLab"
+                  className="h-6 w-auto max-w-[130px] object-contain"
+                />
+              </div>
+              <div className="overflow-hidden flex flex-col justify-center">
+                <span className="text-[8.5px] font-extrabold text-[#C9A876] uppercase tracking-widest leading-none font-albert bg-[#181F4B] px-1.5 py-0.5 rounded border border-[#C9A876]/30">
+                  {isSuperAdmin ? 'ADMIN' : 'OUTLET'}
+                </span>
+              </div>
+            </Link>
             <button
               type="button"
               onClick={onToggleCollapse}
-              className="w-6 h-6 rounded-md text-[#8B93B8] hover:text-[#C9A876] hover:bg-[#181F4B] flex items-center justify-center transition-colors cursor-pointer"
-              title="Collapse Sidebar"
+              className="w-7 h-7 rounded-lg text-[#8B93B8] hover:text-[#C9A876] hover:bg-[#181F4B] flex items-center justify-center transition-colors cursor-pointer shrink-0 ml-1"
+              title="Tutup Sidebar"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>

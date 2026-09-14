@@ -193,41 +193,32 @@ export default function Topbar({
     : assignedOutlet.name;
 
   return (
-    <header className="h-16 bg-white border-b border-[#E7E8F0] px-6 flex items-center justify-between sticky top-0 z-20 font-source shadow-xs">
-      {/* Left Section: Sidebar Toggle + Brand Logo + Outlet Switcher */}
-      <div className="flex items-center gap-4">
+    <header className="h-16 bg-white/95 backdrop-blur-md border-b border-[#E7E8F0] px-6 flex items-center justify-between sticky top-0 z-20 font-source shadow-xs">
+      {/* Left Section: Sidebar Toggle + Outlet Switcher */}
+      <div className="flex items-center gap-3">
         <button
           onClick={onToggleCollapse}
-          className="p-2 rounded-xl text-[#6B7088] hover:text-[#181F4B] hover:bg-[#F4F5F9] transition cursor-pointer"
-          title={collapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
+          className="p-2 rounded-xl text-[#6B7088] hover:text-[#181F4B] hover:bg-[#F4F5F9] transition cursor-pointer border border-[#E7E8F0]/60"
+          title={collapsed ? 'Buka Sidebar' : 'Tutup Sidebar'}
         >
           {collapsed ? (
-            <PanelLeftOpen className="w-5 h-5" />
+            <PanelLeftOpen className="w-4 h-4" />
           ) : (
-            <PanelLeftClose className="w-5 h-5" />
+            <PanelLeftClose className="w-4 h-4" />
           )}
         </button>
-
-        {/* Brand Logo */}
-        <Link href="/dashboard" className="flex items-center hover:opacity-90 transition">
-          <img
-            src="/logo.png"
-            alt="ER CoffeeLab"
-            className="h-8 sm:h-9 w-auto max-w-[170px] object-contain shrink-0"
-          />
-        </Link>
 
         {/* Outlet Selector / Lock Badge */}
         {activeRole === 'super_admin' ? (
           <div className="relative flex items-center">
-            <Globe className="w-4 h-4 absolute left-3.5 text-[#C9A876] pointer-events-none" />
+            <Globe className="w-3.5 h-3.5 absolute left-3 text-[#C9A876] pointer-events-none" />
             <select
               value={selectedOutletId ?? 'all'}
               onChange={(e) => {
                 const val = e.target.value;
                 onSelectOutlet(val === 'all' ? null : Number(val));
               }}
-              className="pl-9 pr-9 py-2 bg-[#F6F3EC] border border-[#C9A876]/40 rounded-xl text-xs font-semibold font-albert text-[#181F4B] focus:outline-none focus:border-[#C9A876] appearance-none cursor-pointer shadow-xs transition"
+              className="pl-8 pr-8 py-1.5 bg-[#F6F3EC] hover:bg-[#FAF6EF] border border-[#C9A876]/40 rounded-xl text-xs font-bold font-albert text-[#181F4B] focus:outline-none focus:border-[#C9A876] appearance-none cursor-pointer shadow-2xs transition"
             >
               <option value="all">Semua Outlet (Global)</option>
               {outlets.map((outlet) => (
@@ -236,16 +227,14 @@ export default function Topbar({
                 </option>
               ))}
             </select>
-            <ChevronDown className="w-4 h-4 absolute right-3 text-[#6B7088] pointer-events-none" />
+            <ChevronDown className="w-3.5 h-3.5 absolute right-2.5 text-[#6B7088] pointer-events-none" />
           </div>
         ) : activeRole === 'outlet_admin' ? (
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-[#EDF0FA] border border-[#D2D9F3] text-xs font-semibold text-[#3B4B8C] font-albert shadow-xs">
-            <Store className="w-4 h-4 text-[#3B4B8C]" />
+          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#EDF0FA] border border-[#D2D9F3] text-xs font-bold text-[#3B4B8C] font-albert shadow-2xs">
+            <Store className="w-3.5 h-3.5 text-[#3B4B8C]" />
             <span>{assignedOutlet.name}</span>
           </div>
-        ) : (
-          <div className="h-8 w-36" />
-        )}
+        ) : null}
       </div>
 
       {/* Right Section: Search + Notifications + Profile */}

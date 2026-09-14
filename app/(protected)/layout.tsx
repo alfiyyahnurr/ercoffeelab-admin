@@ -38,7 +38,7 @@ function InnerLayout({ children }: { children: React.ReactNode }) {
       {/* Main Container Wrapper */}
       <div
         className={`transition-all duration-300 ease-in-out flex flex-col min-h-screen ${
-          collapsed ? 'pl-[72px]' : 'pl-[260px]'
+          collapsed ? 'pl-[70px]' : 'pl-[250px]'
         }`}
       >
         {/* Top Header Bar */}

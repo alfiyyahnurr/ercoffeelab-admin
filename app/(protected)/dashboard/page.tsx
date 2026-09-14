@@ -132,14 +132,14 @@ export default function DashboardPage() {
   return (
     <div className="space-y-4 animate-fade-in max-w-7xl mx-auto">
       {/* Header Bar */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4.5 rounded-xl border border-[#E7E8F0] shadow-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-xl border border-[#E7E8F0] shadow-xs">
         <div>
           <div className="flex items-center gap-2.5">
             <h1 className="text-xl font-bold font-albert text-[#181F4B]">
               Executive Dashboard
             </h1>
             <Badge variant="navy" dot>
-              {isSuperAdmin && !selectedOutletId ? 'Global Overview' : activeOutletName}
+              {isSuperAdmin && !selectedOutletId ? 'Semua Outlet' : activeOutletName}
             </Badge>
           </div>
           <p className="text-xs text-[#6B7088] mt-0.5">
@@ -148,27 +148,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Action Controls */}
-        <div className="flex flex-wrap items-center gap-2.5">
-          {isSuperAdmin && (
-            <div className="w-52">
-              <select
-                value={selectedOutletId ?? ''}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setSelectedOutletId(val ? Number(val) : null);
-                }}
-                className="select text-xs h-8"
-              >
-                <option value="">Semua Outlet (Global)</option>
-                {outlets.map((o) => (
-                  <option key={o.id} value={o.id}>
-                    {o.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
+        <div className="flex items-center gap-2">
           <Button
             variant="secondary"
             size="sm"
@@ -176,7 +156,7 @@ export default function DashboardPage() {
             loading={loading}
             icon={<RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />}
           >
-            Refresh
+            Refresh Data
           </Button>
         </div>
       </div>
