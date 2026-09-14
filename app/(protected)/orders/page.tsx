@@ -5,18 +5,23 @@ import Link from 'next/link';
 import { apiFetch } from '@/lib/api-client';
 import { useOutletContext } from '@/context/OutletContext';
 import { getStoredRole } from '@/lib/auth';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell, TableEmptyState } from '@/components/ui/Table';
+import { Badge, OrderStatusBadge } from '@/components/ui/Badge';
+import { Tabs } from '@/components/ui/Tabs';
+import { Input } from '@/components/ui/Input';
+import { Button } from '@/components/ui/Button';
+import { Skeleton } from '@/components/ui/Skeleton';
 import Pagination from '@/components/Pagination';
 import {
   Coffee,
   Search,
   Eye,
   RefreshCw,
-  Clock,
-  CheckCircle2,
-  AlertCircle,
   ShoppingBag,
   Store,
   Globe,
+  Clock,
+  TrendingUp,
 } from 'lucide-react';
 
 export interface OrderItem {
@@ -40,7 +45,7 @@ const STATUS_TABS = [
   { id: 'all', label: 'Semua Status' },
   { id: 'pending', label: 'Pending' },
   { id: 'preparing', label: 'Diproses (Preparing)' },
-  { id: 'ready', label: 'Siap Diambil (Ready)' },
+  { id: 'ready', label: 'Siap (Ready)' },
   { id: 'completed', label: 'Selesai' },
   { id: 'cancelled', label: 'Batal' },
 ];
@@ -99,262 +104,282 @@ export default function OrdersPage() {
   }, [activeTab, isSuperAdmin, selectedOutletId]);
 
   useEffect(() => {
-    fetchOrders(false);
+    fetchOrders();
     setCurrentPage(1);
-
-    // Auto background polling every 5 seconds with outlet filter
-    const timer = setInterval(() => {
-      fetchOrders(true);
-    }, 5000);
-
-    return () => clearInterval(timer);
   }, [fetchOrders]);
+
+  // Auto poll every 12 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchOrders(true);
+    }, 12000);
+    return () => clearInterval(interval);
+  }, [fetchOrders]);
+
+  // Filtered by Search Query
+  const filteredOrders = orders.filter((ord) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      ord.orderNumber.toLowerCase().includes(q) ||
+      (ord.customerName && ord.customerName.toLowerCase().includes(q)) ||
+      (ord.outletName && ord.outletName.toLowerCase().includes(q)) ||
+      (ord.fulfillmentType && ord.fulfillmentType.toLowerCase().includes(q))
+    );
+  });
+
+  // Calculate Metrics
+  const totalAmount = orders.reduce((acc, curr) => acc + (curr.total || 0), 0);
+  const preparingCount = orders.filter((o) => o.orderStatus === 'preparing').length;
+  const readyCount = orders.filter((o) => o.orderStatus === 'ready').length;
+
+  // Pagination Slice
+  const totalItems = filteredOrders.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedOrders = filteredOrders.slice(startIndex, startIndex + itemsPerPage);
 
   const formatRupiah = (val: number) =>
     'Rp' + Math.max(0, Math.round(val || 0)).toLocaleString('id-ID');
 
-  const getStatusBadge = (status: string) => {
-    const s = (status || '').toLowerCase();
-    if (s === 'pending' || s === 'unpaid') {
-      return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#FEF6E6] text-[#C9A876] border border-[#F7E5C4]">
-          <Clock className="w-3 h-3" />
-          Pending
-        </span>
-      );
+  const formatDate = (isoStr: string) => {
+    if (!isoStr) return '-';
+    try {
+      const d = new Date(isoStr);
+      return d.toLocaleDateString('id-ID', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    } catch {
+      return isoStr;
     }
-    if (s === 'preparing' || s === 'processing' || s === 'confirmed') {
-      return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#EDF0FA] text-[#3B4B8C] border border-[#D2D9F3]">
-          <ShoppingBag className="w-3 h-3" />
-          Diproses (Preparing)
-        </span>
-      );
-    }
-    if (s === 'ready') {
-      return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#FEF6E6] text-[#C9A876] border border-[#F7E5C4]">
-          <CheckCircle2 className="w-3 h-3" />
-          Siap Diambil (Ready)
-        </span>
-      );
-    }
-    if (s === 'completed') {
-      return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#EAF5EE] text-[#3E8A5A] border border-[#C6E7D2]">
-          <CheckCircle2 className="w-3 h-3" />
-          Selesai
-        </span>
-      );
-    }
-    return (
-      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#FDF0F2] text-[#C9576B] border border-[#FAF1F3]">
-        {status}
-      </span>
-    );
   };
 
-  const filteredOrders = orders.filter((order) => {
-    const q = searchQuery.toLowerCase().trim();
-    if (!q) return true;
-    return (
-      order.orderNumber.toLowerCase().includes(q) ||
-      order.customerName.toLowerCase().includes(q) ||
-      (order.customerPhone && order.customerPhone.includes(q))
-    );
-  });
-
-  const totalPages = Math.max(1, Math.ceil(filteredOrders.length / itemsPerPage));
-  const paginatedOrders = filteredOrders.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
-
   return (
-    <div className="space-y-6 font-source">
-      {/* Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-[#E7E8F0] shadow-xs">
+    <div className="space-y-4 animate-fade-in max-w-7xl mx-auto">
+      {/* Top Header Card */}
+      <div className="bg-white rounded-xl border border-[#E7E8F0] p-4.5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold font-albert text-[#181F4B]">
-              Daftar Pesanan Masuk (Real-Time)
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-xl font-bold font-albert text-[#181F4B]">
+              Live Orders & Transaksi
             </h1>
-
-            {/* Active Outlet Scope Badge */}
-            {activeRole === 'super_admin' ? (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#F6F3EC] border border-[#C9A876]/40 text-xs font-bold text-[#181F4B] font-albert shadow-xs">
-                <Globe className="w-3.5 h-3.5 text-[#C9A876]" />
-                <span>{activeOutletName}</span>
-              </span>
-            ) : activeRole === 'outlet_admin' ? (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#EDF0FA] border border-[#D2D9F3] text-xs font-bold text-[#3B4B8C] font-albert shadow-xs">
-                <Store className="w-3.5 h-3.5 text-[#3B4B8C]" />
-                <span>Cabang Aktif: {activeOutletName}</span>
-              </span>
-            ) : (
-              <div className="h-6 w-32 bg-[#F4F5F9] animate-pulse rounded-lg" />
-            )}
+            <Badge variant="navy" dot>
+              {isSuperAdmin && !selectedOutletId ? 'Semua Outlet' : activeOutletName}
+            </Badge>
           </div>
-
-          <p className="text-xs text-[#6B7088] mt-1">
-            Pantau dan kelola seluruh transaksi order pelanggan secara otomatis ({activeOutletName}).
+          <p className="text-xs text-[#6B7088] mt-0.5">
+            Pantau dan proses pesanan masuk dari pelanggan secara real-time.
           </p>
         </div>
 
-        <button
-          onClick={() => fetchOrders()}
-          disabled={loading}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-white hover:bg-[#F6F3EC] border border-[#E7E8F0] hover:border-[#C9A876] rounded-xl text-xs font-semibold text-[#181F4B] transition-all duration-150 shadow-xs cursor-pointer disabled:opacity-50 hover:scale-[1.02] active:scale-[0.98] self-start sm:self-auto"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 text-[#C9A876] ${loading ? 'animate-spin' : ''}`} />
-          <span>Refresh Orders</span>
-        </button>
+        {/* Quick KPI Stat Chips */}
+        <div className="flex items-center gap-2.5 flex-wrap">
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#F4F5F9] border border-[#E7E8F0] text-xs">
+            <Clock className="w-3.5 h-3.5 text-[#C9A876]" />
+            <span className="text-[#6B7088]">Diproses:</span>
+            <span className="font-bold text-[#181F4B] font-albert">{preparingCount}</span>
+          </div>
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#F4F5F9] border border-[#E7E8F0] text-xs">
+            <ShoppingBag className="w-3.5 h-3.5 text-[#3B4B8C]" />
+            <span className="text-[#6B7088]">Siap:</span>
+            <span className="font-bold text-[#181F4B] font-albert">{readyCount}</span>
+          </div>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => fetchOrders(false)}
+            loading={loading}
+            icon={<RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />}
+          >
+            Refresh
+          </Button>
+        </div>
       </div>
 
-      {error && (
-        <div className="p-4 rounded-2xl bg-[#FDF0F2] border border-[#FAF1F3] text-xs text-[#C9576B] flex items-center gap-2 font-medium">
-          <AlertCircle className="w-4 h-4 shrink-0" />
-          <span>{error}</span>
-        </div>
-      )}
-
-      {/* Control Bar: Status Tabs & Search Input */}
-      <div className="bg-white p-4 rounded-2xl border border-[#E7E8F0] shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
-        {/* Status Filter Tabs */}
-        <div className="flex items-center gap-1 overflow-x-auto pb-2 md:pb-0 scrollbar-none">
-          {STATUS_TABS.map((tab) => {
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => {
-                  setActiveTab(tab.id);
-                  setCurrentPage(1);
-                }}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold font-albert transition whitespace-nowrap cursor-pointer hover:scale-[1.02] ${
-                  isActive
-                    ? 'bg-[#181F4B] text-[#C9A876] shadow-xs'
-                    : 'text-[#6B7088] hover:bg-[#F4F5F9] hover:text-[#181F4B]'
-                }`}
-              >
-                {tab.label}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Search Bar */}
-        <div className="relative w-full md:w-72 shrink-0">
-          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#6B7088]" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
+      {/* Main Table Container */}
+      <div className="bg-white rounded-xl border border-[#E7E8F0] shadow-xs overflow-hidden">
+        {/* Tabs Bar */}
+        <div className="border-b border-[#E7E8F0] bg-[#FAFAFD] px-4 pt-1 flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <Tabs
+            tabs={STATUS_TABS.map((t) => ({
+              ...t,
+              count:
+                t.id === 'all'
+                  ? orders.length
+                  : orders.filter((o) => o.orderStatus === t.id).length,
+            }))}
+            activeTab={activeTab}
+            onChange={(id) => {
+              setActiveTab(id);
               setCurrentPage(1);
             }}
-            placeholder="No Order / Nama Pelanggan..."
-            className="w-full pl-9 pr-4 py-2 bg-[#F4F5F9] border border-[#E7E8F0] rounded-xl text-xs text-[#1E202B] placeholder-[#6B7088] focus:outline-none focus:border-[#C9A876] transition"
           />
-        </div>
-      </div>
 
-      {/* Orders Table Container */}
-      <div className="bg-white rounded-2xl border border-[#E7E8F0] shadow-xs overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead>
-              <tr className="bg-[#F6F3EC] border-b border-[#E7E8F0] text-[#6B7088] uppercase tracking-wider font-bold font-albert text-[11px]">
-                <th className="py-3.5 px-4">No. Order</th>
-                <th className="py-3.5 px-4">Pelanggan</th>
-                <th className="py-3.5 px-4">Outlet</th>
-                <th className="py-3.5 px-4">Tipe Fulfillment</th>
-                <th className="py-3.5 px-4">Total</th>
-                <th className="py-3.5 px-4">Pembayaran</th>
-                <th className="py-3.5 px-4">Status Pesanan</th>
-                <th className="py-3.5 px-4 text-center">Aksi</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#E7E8F0]">
+          {/* Search Box */}
+          <div className="pb-2.5 md:pb-0 w-full md:w-64">
+            <Input
+              placeholder="Cari order # / nama..."
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setCurrentPage(1);
+              }}
+              icon={<Search className="w-3.5 h-3.5" />}
+              className="h-8 text-xs"
+            />
+          </div>
+        </div>
+
+        {/* Orders Table */}
+        <div className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Order #</TableHead>
+                <TableHead>Pelanggan</TableHead>
+                {isSuperAdmin && !selectedOutletId && <TableHead>Outlet</TableHead>}
+                <TableHead>Tipe Order</TableHead>
+                <TableHead>Total Tagihan</TableHead>
+                <TableHead>Status Bayar</TableHead>
+                <TableHead>Status Pesanan</TableHead>
+                <TableHead>Waktu Masuk</TableHead>
+                <TableHead className="text-right">Aksi</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {loading ? (
-                <tr>
-                  <td colSpan={8} className="py-12 text-center text-[#6B7088]">
-                    <div className="w-6 h-6 border-2 border-[#181F4B] border-t-transparent rounded-full animate-spin mx-auto mb-2" />
-                    <span>Memuat pesanan...</span>
-                  </td>
-                </tr>
-              ) : paginatedOrders.length > 0 ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell colSpan={isSuperAdmin && !selectedOutletId ? 9 : 8} className="py-4">
+                      <Skeleton className="h-5 w-full" />
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : paginatedOrders.length === 0 ? (
+                <TableEmptyState
+                  icon={<Coffee className="w-10 h-10 text-[#C9A876]" />}
+                  title="Tidak ada pesanan ditemukan"
+                  description={
+                    searchQuery
+                      ? `Tidak ada order yang cocok dengan "${searchQuery}"`
+                      : 'Belum ada transaksi pada kategori status ini.'
+                  }
+                />
+              ) : (
                 paginatedOrders.map((order) => (
-                  <tr key={order.id} className="hover:bg-[#F4F5F9] transition">
-                    <td className="py-3.5 px-4 font-mono font-bold text-[#181F4B]">
-                      {order.orderNumber}
-                    </td>
-                    <td className="py-3.5 px-4 font-semibold text-[#1E202B]">
-                      {order.customerName}
-                    </td>
-                    <td className="py-3.5 px-4 text-[#6B7088]">
-                      {order.outletName}
-                    </td>
-                    <td className="py-3.5 px-4 capitalize">
-                      <span className="inline-block px-2 py-0.5 rounded bg-[#F4F5F9] text-[#6B7088] text-[10px] font-bold uppercase border border-[#E7E8F0]">
-                        {order.fulfillmentType}
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-4 font-bold font-albert text-[#181F4B]">
-                      {formatRupiah(order.total)}
-                    </td>
-                    <td className="py-3.5 px-4">
-                      <span
-                        className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold capitalize ${
-                          order.paymentStatus === 'paid'
-                            ? 'bg-[#EAF5EE] text-[#3E8A5A]'
-                            : 'bg-[#FDF0F2] text-[#C9576B]'
-                        }`}
-                      >
-                        {order.paymentStatus}
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-4">{getStatusBadge(order.orderStatus)}</td>
-                    <td className="py-3.5 px-4 text-center">
+                  <TableRow key={order.id}>
+                    {/* Order Number */}
+                    <TableCell className="font-bold font-albert text-[#181F4B]">
                       <Link
                         href={`/orders/${order.id}`}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#181F4B] text-[#C9A876] hover:bg-[#0E1230] font-semibold text-xs font-albert transition shadow-xs cursor-pointer hover:scale-105"
+                        className="hover:text-[#C9A876] hover:underline"
                       >
-                        <Eye className="w-3.5 h-3.5" />
-                        <span>Detail</span>
+                        {order.orderNumber}
                       </Link>
-                    </td>
-                  </tr>
+                    </TableCell>
+
+                    {/* Customer */}
+                    <TableCell>
+                      <div className="font-semibold text-xs text-[#1E202B]">
+                        {order.customerName || 'Tamu (Guest)'}
+                      </div>
+                      {order.customerPhone && (
+                        <div className="text-[11px] text-[#6B7088]">
+                          {order.customerPhone}
+                        </div>
+                      )}
+                    </TableCell>
+
+                    {/* Outlet Name (Super Admin Global) */}
+                    {isSuperAdmin && !selectedOutletId && (
+                      <TableCell className="text-xs text-[#6B7088]">
+                        {order.outletName || '-'}
+                      </TableCell>
+                    )}
+
+                    {/* Fulfillment Type */}
+                    <TableCell>
+                      <span
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold ${
+                          order.fulfillmentType === 'delivery'
+                            ? 'bg-[#EDF0FA] text-[#3B4B8C]'
+                            : 'bg-[#FEF6E6] text-[#C9A876]'
+                        }`}
+                      >
+                        {order.fulfillmentType === 'delivery' ? '🛵 Delivery' : '☕ Pickup'}
+                      </span>
+                    </TableCell>
+
+                    {/* Total Amount */}
+                    <TableCell className="font-bold text-[#181F4B] font-albert text-xs">
+                      {formatRupiah(order.total)}
+                    </TableCell>
+
+                    {/* Payment Status */}
+                    <TableCell>
+                      <span
+                        className={`inline-flex items-center gap-1.5 text-xs font-bold ${
+                          order.paymentStatus === 'paid'
+                            ? 'text-[#3E8A5A]'
+                            : 'text-[#C9576B]'
+                        }`}
+                      >
+                        <span
+                          className={`w-1.5 h-1.5 rounded-full ${
+                            order.paymentStatus === 'paid'
+                              ? 'bg-[#3E8A5A]'
+                              : 'bg-[#C9576B]'
+                          }`}
+                        />
+                        {order.paymentStatus === 'paid' ? 'Lunas (Paid)' : 'Unpaid'}
+                      </span>
+                    </TableCell>
+
+                    {/* Order Status Badge */}
+                    <TableCell>
+                      <OrderStatusBadge status={order.orderStatus} />
+                    </TableCell>
+
+                    {/* Created Date */}
+                    <TableCell className="text-[11.5px] text-[#6B7088] whitespace-nowrap">
+                      {formatDate(order.createdAt)}
+                    </TableCell>
+
+                    {/* Actions */}
+                    <TableCell className="text-right">
+                      <Link href={`/orders/${order.id}`}>
+                        <Button variant="secondary" size="sm" icon={<Eye className="w-3.5 h-3.5" />}>
+                          Detail
+                        </Button>
+                      </Link>
+                    </TableCell>
+                  </TableRow>
                 ))
-              ) : (
-                <tr>
-                  <td colSpan={8} className="py-16 text-center text-[#6B7088]">
-                    <Coffee className="w-10 h-10 text-[#E7E8F0] mx-auto mb-3" />
-                    <p className="font-semibold text-sm font-albert text-[#1E202B]">
-                      Tidak ada pesanan ditemukan
-                    </p>
-                    <p className="text-xs text-[#6B7088] mt-1">
-                      Coba ubah kata kunci pencarian atau filter status pesanan.
-                    </p>
-                  </td>
-                </tr>
               )}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
 
-        {/* Reusable Pagination matching reference image */}
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          totalItems={filteredOrders.length}
-          itemsPerPage={itemsPerPage}
-          onPageChange={setCurrentPage}
-          onItemsPerPageChange={(num) => {
-            setItemsPerPage(num);
-            setCurrentPage(1);
-          }}
-        />
+        {/* Pagination Footer */}
+        {!loading && totalItems > 0 && (
+          <div className="border-t border-[#E7E8F0] p-3 bg-[#FAFAFD]">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={totalItems}
+              itemsPerPage={itemsPerPage}
+              onPageChange={setCurrentPage}
+              onItemsPerPageChange={(val) => {
+                setItemsPerPage(val);
+                setCurrentPage(1);
+              }}
+            />
+          </div>
+        )}
       </div>
     </div>
   );

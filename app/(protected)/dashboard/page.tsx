@@ -5,6 +5,10 @@ import Link from 'next/link';
 import { apiFetch } from '@/lib/api-client';
 import { useOutletContext } from '@/context/OutletContext';
 import { getStoredRole } from '@/lib/auth';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell, TableEmptyState } from '@/components/ui/Table';
+import { Badge, OrderStatusBadge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
+import { Skeleton } from '@/components/ui/Skeleton';
 import {
   TrendingUp,
   ShoppingBag,
@@ -99,42 +103,13 @@ export default function DashboardPage() {
     return val.toString();
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status?.toLowerCase()) {
-      case 'completed':
-        return <span className="badge badge-success">COMPLETED</span>;
-      case 'preparing':
-      case 'confirmed':
-        return <span className="badge badge-warning">PREPARING</span>;
-      case 'ready':
-      case 'on_delivery':
-        return <span className="badge badge-info font-bold font-source">READY</span>;
-      case 'cancelled':
-        return <span className="badge badge-danger">CANCELLED</span>;
-      default:
-        return <span className="badge badge-info">{status?.toUpperCase() || 'PENDING'}</span>;
-    }
-  };
-
-  const getPaymentBadge = (status: string) => {
-    if (status === 'paid') {
-      return <span className="text-[11px] font-semibold text-green">LUNAS (Paid)</span>;
-    }
-    return <span className="text-[11px] font-semibold text-red">UNPAID</span>;
-  };
-
-  // Mathematical Clean Dynamic Y-Axis scale calculation per range mode
   const trendList = stats?.dailySalesTrend || [];
   const rawMaxRevenue = Math.max(...trendList.map((item) => item.revenue), 0);
 
   let baseStep = 50000;
-  if (appliedRange === 'weekly') {
-    baseStep = 1000000;
-  } else if (appliedRange === 'monthly') {
-    baseStep = 5000000;
-  } else if (appliedRange === 'yearly') {
-    baseStep = 50000000;
-  }
+  if (appliedRange === 'weekly') baseStep = 1000000;
+  else if (appliedRange === 'monthly') baseStep = 5000000;
+  else if (appliedRange === 'yearly') baseStep = 50000000;
 
   const stepCount = 4;
   let tickInterval = baseStep;
@@ -152,348 +127,334 @@ export default function DashboardPage() {
   }
 
   const maxScale = Math.max(baseStep * stepCount, tickInterval * stepCount);
-
-  const yTicks = [
-    maxScale,
-    maxScale * 0.75,
-    maxScale * 0.5,
-    maxScale * 0.25,
-    0,
-  ];
+  const yTicks = [maxScale, maxScale * 0.75, maxScale * 0.5, maxScale * 0.25, 0];
 
   return (
-    <div className="space-y-8 font-source">
+    <div className="space-y-4 animate-fade-in max-w-7xl mx-auto">
       {/* Header Bar */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-[#E7E8F0] shadow-xs">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4.5 rounded-xl border border-[#E7E8F0] shadow-xs">
         <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold font-albert text-[#181F4B]">
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-xl font-bold font-albert text-[#181F4B]">
               Executive Dashboard
             </h1>
-
-            {/* Active Outlet Scope Badge */}
-            {activeRole === 'super_admin' ? (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#F6F3EC] border border-[#C9A876]/40 text-xs font-bold text-[#181F4B] font-albert shadow-xs">
-                <Globe className="w-3.5 h-3.5 text-[#C9A876]" />
-                <span>{selectedOutletId ? activeOutletName : 'Global Overview'}</span>
-              </span>
-            ) : activeRole === 'outlet_admin' ? (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#EDF0FA] border border-[#D2D9F3] text-xs font-bold text-[#3B4B8C] font-albert shadow-xs">
-                <Store className="w-3.5 h-3.5 text-[#3B4B8C]" />
-                <span>Cabang Aktif: {activeOutletName}</span>
-              </span>
-            ) : (
-              <div className="h-6 w-32 bg-[#F4F5F9] animate-pulse rounded-lg" />
-            )}
+            <Badge variant="navy" dot>
+              {isSuperAdmin && !selectedOutletId ? 'Global Overview' : activeOutletName}
+            </Badge>
           </div>
-
-          <p className="text-xs text-[#6B7088] mt-1">
-            Ringkasan omset harian, tren pesanan, dan monitoring operasi live.
+          <p className="text-xs text-[#6B7088] mt-0.5">
+            Ringkasan omset harian, performa pesanan, dan monitoring operasi live.
           </p>
         </div>
 
-        {/* Action Controls: Outlet Selector for Super Admin & Refresh Button */}
-        <div className="flex flex-wrap items-center gap-3">
-          {activeRole === 'super_admin' && (
-            <div className="relative flex items-center">
-              <Store className="w-4 h-4 absolute left-3 text-[#C9A876] pointer-events-none" />
+        {/* Action Controls */}
+        <div className="flex flex-wrap items-center gap-2.5">
+          {isSuperAdmin && (
+            <div className="w-52">
               <select
-                value={selectedOutletId ?? 'all'}
+                value={selectedOutletId ?? ''}
                 onChange={(e) => {
                   const val = e.target.value;
-                  setSelectedOutletId(val === 'all' ? null : Number(val));
+                  setSelectedOutletId(val ? Number(val) : null);
                 }}
-                className="pl-9 pr-9 py-2 bg-[#F6F3EC] border border-[#C9A876]/40 rounded-xl text-xs font-semibold font-albert text-[#181F4B] focus:outline-none focus:border-[#C9A876] appearance-none cursor-pointer shadow-xs transition"
+                className="select text-xs h-8"
               >
-                <option value="all">Semua Outlet (Global)</option>
-                {outlets.map((outlet) => (
-                  <option key={outlet.id} value={outlet.id}>
-                    {outlet.name}
+                <option value="">Semua Outlet (Global)</option>
+                {outlets.map((o) => (
+                  <option key={o.id} value={o.id}>
+                    {o.name}
                   </option>
                 ))}
               </select>
-              <ChevronDown className="w-3.5 h-3.5 absolute right-3 text-[#6B7088] pointer-events-none" />
             </div>
           )}
 
-          <button
+          <Button
+            variant="secondary"
+            size="sm"
             onClick={fetchDashboardStats}
-            disabled={loading}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-white hover:bg-[#F6F3EC] border border-[#E7E8F0] rounded-xl text-xs font-semibold text-[#181F4B] transition shadow-xs cursor-pointer disabled:opacity-50"
+            loading={loading}
+            icon={<RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />}
           >
-            <RefreshCw className={`w-3.5 h-3.5 text-[#C9A876] ${loading ? 'animate-spin' : ''}`} />
-            <span>Refresh Data</span>
-          </button>
+            Refresh
+          </Button>
         </div>
       </div>
 
-      {error && (
-        <div className="p-4 rounded-2xl bg-[#FDF0F2] border border-[#FAF1F3] text-xs text-[#C9576B] flex items-center gap-2 font-medium">
-          <AlertCircle className="w-4 h-4 shrink-0" />
-          <span>{error}</span>
-        </div>
-      )}
-
-      {/* 4 KPI Metrics Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        {/* KPI 1: Omset Hari Ini */}
-        <div className="bg-white p-5 rounded-2xl border border-[#E7E8F0] shadow-xs relative overflow-hidden">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold text-[#6B7088] uppercase tracking-wider">
-              Omset Hari Ini
+      {/* KPI Cards Grid (4 Columns) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+        {/* Card 1: Revenue */}
+        <div className="bg-white p-4 rounded-xl border border-[#E7E8F0] shadow-xs flex flex-col justify-between hover:border-[#C9A876]/50 transition-colors">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold text-[#6B7088] uppercase tracking-wider font-albert">
+              Total Omset Hari Ini
             </span>
-            <div className="w-9 h-9 rounded-xl bg-[#181F4B]/10 text-[#181F4B] flex items-center justify-center">
-              <TrendingUp className="w-5 h-5 text-[#181F4B]" />
+            <div className="w-8 h-8 rounded-lg bg-[#FEF6E6] text-[#C9A876] flex items-center justify-center">
+              <TrendingUp className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-2xl font-bold font-albert text-[#181F4B] tracking-tight">
-            {formatRupiah(stats?.todayRevenue || 0)}
+          <div className="mt-3">
+            <h3 className="text-xl font-bold font-albert text-[#181F4B]">
+              {loading ? <Skeleton className="h-6 w-28" /> : formatRupiah(stats?.todayRevenue || 0)}
+            </h3>
+            <p className="text-[10.5px] text-[#3E8A5A] font-semibold mt-0.5 flex items-center gap-1">
+              <span>●</span> Transaksi berstatus Lunas (Paid)
+            </p>
           </div>
-          <p className="text-[11px] text-[#6B7088] mt-1.5 flex items-center gap-1">
-            <CheckCircle2 className="w-3.5 h-3.5 text-green" />
-            <span>Pesanan lunas & selesai ({activeOutletName})</span>
-          </p>
         </div>
 
-        {/* KPI 2: Total Pesanan Hari Ini */}
-        <div className="bg-white p-5 rounded-2xl border border-[#E7E8F0] shadow-xs relative overflow-hidden">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold text-[#6B7088] uppercase tracking-wider">
-              Total Pesanan
+        {/* Card 2: Orders Count */}
+        <div className="bg-white p-4 rounded-xl border border-[#E7E8F0] shadow-xs flex flex-col justify-between hover:border-[#C9A876]/50 transition-colors">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold text-[#6B7088] uppercase tracking-wider font-albert">
+              Total Pesanan Masuk
             </span>
-            <div className="w-9 h-9 rounded-xl bg-[#C9A876]/15 text-[#C9A876] flex items-center justify-center">
-              <ShoppingBag className="w-5 h-5 text-[#C9A876]" />
+            <div className="w-8 h-8 rounded-lg bg-[#EDF0FA] text-[#3B4B8C] flex items-center justify-center">
+              <ShoppingBag className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-2xl font-bold font-albert text-[#181F4B] tracking-tight">
-            {stats?.todayOrders || 0} <span className="text-xs font-normal text-[#6B7088]">pesanan</span>
+          <div className="mt-3">
+            <h3 className="text-xl font-bold font-albert text-[#181F4B]">
+              {loading ? <Skeleton className="h-6 w-16" /> : `${stats?.todayOrders || 0} Order`}
+            </h3>
+            <p className="text-[10.5px] text-[#6B7088] font-medium mt-0.5">
+              Pickup & Delivery gabungan
+            </p>
           </div>
-          <p className="text-[11px] text-[#6B7088] mt-1.5">
-            Akumulasi transaksi selesai hari ini
-          </p>
         </div>
 
-        {/* KPI 3: Rata-Rata Nilai Order (AOV) */}
-        <div className="bg-white p-5 rounded-2xl border border-[#E7E8F0] shadow-xs relative overflow-hidden">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold text-[#6B7088] uppercase tracking-wider">
-              Rata-rata (AOV)
+        {/* Card 3: AOV */}
+        <div className="bg-white p-4 rounded-xl border border-[#E7E8F0] shadow-xs flex flex-col justify-between hover:border-[#C9A876]/50 transition-colors">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold text-[#6B7088] uppercase tracking-wider font-albert">
+              Rata-rata Order (AOV)
             </span>
-            <div className="w-9 h-9 rounded-xl bg-[#3B4B8C]/10 text-[#3B4B8C] flex items-center justify-center">
-              <Coffee className="w-5 h-5 text-[#3B4B8C]" />
+            <div className="w-8 h-8 rounded-lg bg-[#F4F5F9] text-[#181F4B] flex items-center justify-center">
+              <Coffee className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-2xl font-bold font-albert text-[#181F4B] tracking-tight">
-            {formatRupiah(stats?.averageOrderValue || 0)}
+          <div className="mt-3">
+            <h3 className="text-xl font-bold font-albert text-[#181F4B]">
+              {loading ? <Skeleton className="h-6 w-24" /> : formatRupiah(stats?.averageOrderValue || 0)}
+            </h3>
+            <p className="text-[10.5px] text-[#6B7088] font-medium mt-0.5">
+              Rata-rata per tiket pesanan
+            </p>
           </div>
-          <p className="text-[11px] text-[#6B7088] mt-1.5">
-            Rata-rata pengeluaran per order
-          </p>
         </div>
 
-        {/* KPI 4: Pesanan Butuh Diproses */}
-        <div className="bg-white p-5 rounded-2xl border border-[#E7E8F0] shadow-xs relative overflow-hidden">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold text-[#6B7088] uppercase tracking-wider">
-              Perlu Diproses
+        {/* Card 4: Action Required */}
+        <div className="bg-white p-4 rounded-xl border border-[#E7E8F0] shadow-xs flex flex-col justify-between hover:border-[#C9A876]/50 transition-colors">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold text-[#6B7088] uppercase tracking-wider font-albert">
+              Butuh Diproses (Live)
             </span>
-            <div className="w-9 h-9 rounded-xl bg-[#C9576B]/10 text-[#C9576B] flex items-center justify-center">
-              <Clock className="w-5 h-5 text-[#C9576B]" />
+            <div className="w-8 h-8 rounded-lg bg-[#FDF0F2] text-[#C9576B] flex items-center justify-center">
+              <Clock className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-2xl font-bold font-albert text-[#C9576B] tracking-tight">
-            {stats?.pendingActionOrders || 0} <span className="text-xs font-normal text-[#6B7088]">butuh aksi</span>
+          <div className="mt-3">
+            <h3 className="text-xl font-bold font-albert text-[#C9576B]">
+              {loading ? <Skeleton className="h-6 w-16" /> : `${stats?.pendingActionOrders || 0} Order`}
+            </h3>
+            <p className="text-[10.5px] text-[#C9576B] font-semibold mt-0.5">
+              Status Pending / Preparing
+            </p>
           </div>
-          <p className="text-[11px] text-[#6B7088] mt-1.5">
-            Antrean pembuatan minuman/makanan
-          </p>
         </div>
       </div>
 
-      {/* Main Grid: Time Performance Tracker & Quick Recent Orders */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Time Performance Tracker Chart (2 cols) */}
-        <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-[#E7E8F0] shadow-xs flex flex-col justify-between min-h-[440px] max-h-[500px]">
-          {/* Tracker Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-            <div>
-              <h2 className="text-lg font-bold font-albert text-[#181F4B]">
-                Time Performance Tracker
-              </h2>
-              <p className="text-xs text-[#6B7088] mt-0.5">
-                Mode {appliedRange === 'daily' ? 'harian (7 hari)' : appliedRange === 'weekly' ? 'mingguan (4 minggu)' : appliedRange === 'monthly' ? 'bulanan (12 bulan)' : 'tahunan (5 tahun)'}: omset pesanan lunas & selesai ({activeOutletName}).
-              </p>
-            </div>
+      {/* Revenue Trend Chart Card */}
+      <div className="bg-white rounded-xl border border-[#E7E8F0] p-4.5 shadow-xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#E7E8F0] pb-3 mb-4">
+          <div>
+            <h2 className="font-albert font-bold text-sm text-[#181F4B]">
+              Grafik Tren Penjualan & Transaksi
+            </h2>
+            <p className="text-[11px] text-[#6B7088] mt-0.5">
+              Visualisasi grafik omset dan volume pesanan berdasarkan rentang waktu.
+            </p>
+          </div>
 
-            {/* Range Controls: Dropdown + Terapkan Button */}
-            <div className="flex items-center gap-2 shrink-0">
-              <div className="relative">
-                <select
-                  value={selectedRange}
-                  onChange={(e) => setSelectedRange(e.target.value as any)}
-                  className="pl-3 pr-8 py-2 bg-white border border-[#E7E8F0] rounded-xl text-xs font-medium text-[#181F4B] focus:outline-none focus:border-[#C9A876] appearance-none cursor-pointer shadow-2xs"
-                >
-                  <option value="daily">Harian (7 Hari)</option>
-                  <option value="weekly">Mingguan (4 Minggu)</option>
-                  <option value="monthly">Bulanan (12 Bulan)</option>
-                  <option value="yearly">Tahunan (5 Tahun)</option>
-                </select>
-                <ChevronDown className="w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 text-[#6B7088] pointer-events-none" />
+          {/* Range Selector Pill Group */}
+          <div className="flex items-center gap-1 bg-[#F4F5F9] p-1 rounded-lg border border-[#E7E8F0] self-start sm:self-auto">
+            {(['daily', 'weekly', 'monthly', 'yearly'] as const).map((mode) => (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => {
+                  setSelectedRange(mode);
+                  setAppliedRange(mode);
+                }}
+                className={`px-3 py-1 text-xs font-bold font-albert rounded-md transition-all cursor-pointer ${
+                  appliedRange === mode
+                    ? 'bg-[#181F4B] text-[#C9A876] shadow-xs'
+                    : 'text-[#6B7088] hover:text-[#181F4B]'
+                }`}
+              >
+                {mode === 'daily'
+                  ? 'Harian'
+                  : mode === 'weekly'
+                  ? 'Mingguan'
+                  : mode === 'monthly'
+                  ? 'Bulanan'
+                  : 'Tahunan'}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Chart Visualization */}
+        <div className="relative pt-2 pb-2">
+          {loading ? (
+            <div className="h-64 flex items-center justify-center">
+              <RefreshCw className="w-6 h-6 text-[#C9A876] animate-spin" />
+            </div>
+          ) : trendList.length === 0 ? (
+            <div className="h-64 flex flex-col items-center justify-center text-center text-[#8B93B8]">
+              <BarChart3 className="w-10 h-10 mb-2 opacity-50 text-[#C9A876]" />
+              <p className="text-xs font-semibold text-[#181F4B]">Belum ada riwayat transaksi</p>
+            </div>
+          ) : (
+            <div className="relative h-64 flex flex-col justify-between">
+              {/* Y-Axis Grid Lines */}
+              <div className="absolute inset-0 flex flex-col justify-between pointer-events-none">
+                {yTicks.map((tick, i) => (
+                  <div key={i} className="flex items-center w-full">
+                    <span className="text-[10px] text-[#8B93B8] font-mono w-14 text-right pr-2 shrink-0">
+                      {formatShortRupiah(tick)}
+                    </span>
+                    <div className="h-[1px] bg-[#F0F1F6] flex-1" />
+                  </div>
+                ))}
               </div>
 
-              <button
-                onClick={() => setAppliedRange(selectedRange)}
-                disabled={loading}
-                className="px-4 py-2 bg-white hover:bg-[#F6F3EC] border border-[#E7E8F0] hover:border-[#C9A876] rounded-xl text-xs font-semibold text-[#6B7088] hover:text-[#181F4B] transition cursor-pointer shadow-2xs disabled:opacity-50"
-              >
-                Terapkan
-              </button>
-            </div>
-          </div>
-
-          {/* Main Chart Canvas Container (Height & Positioning Shared 1:1) */}
-          <div className="relative border-b border-[#E7E8F0] h-[240px] pt-4 pb-6">
-            {/* Background Y-Axis Grid Lines & Tick Labels (Exact top-4 bottom-6 canvas) */}
-            <div className="absolute inset-x-0 top-4 bottom-6 flex flex-col justify-between pointer-events-none">
-              {yTicks.map((tick, idx) => (
-                <div key={idx} className="flex items-center justify-between w-full">
-                  <span className="text-[10px] font-mono text-[#A0A5BD] w-20 shrink-0 truncate">
-                    {formatRupiah(tick)}
-                  </span>
-                  <div className="w-full border-t border-[#E7E8F0]/70" />
-                </div>
-              ))}
-            </div>
-
-            {/* Single Bar Columns (Exact top-4 bottom-6 canvas, matching Y-ticks 1:1) */}
-            <div className="absolute left-20 right-0 top-4 bottom-6 flex items-end justify-between gap-3 overflow-x-visible">
-              {trendList.length > 0 ? (
-                trendList.map((item, idx) => {
-                  const revVal = item.revenue || 0;
-                  const heightPercent = revVal > 0
-                    ? Math.min(100, Math.round((revVal / maxScale) * 100))
-                    : 0; // Empty when 0 data!
-
+              {/* Bar Columns Container */}
+              <div className="relative h-full flex items-end justify-around pl-16 pr-4 pb-6 z-10">
+                {trendList.map((item, idx) => {
+                  const heightPercent = maxScale > 0 ? Math.min(100, (item.revenue / maxScale) * 100) : 0;
                   return (
-                    <div key={idx} className="flex-1 h-full flex flex-col items-center justify-end group relative z-10">
-                      {/* Hover Popover Box matching screenshot 1:1 */}
-                      <div className="absolute -top-16 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 group-hover:-translate-y-1 transition-all duration-200 bg-[#1E202B] text-white p-2.5 rounded-xl shadow-2xl border border-[#3B4B8C]/40 pointer-events-none whitespace-nowrap z-50 flex flex-col gap-1 min-w-[145px]">
-                        <p className="text-xs font-bold font-albert border-b border-[#3B4B8C]/40 pb-1 text-white">
-                          {item.displayLabel || item.date}
-                        </p>
-                        <div className="flex items-center gap-1.5 text-[11px] font-medium font-source">
-                          <span className="w-2.5 h-2.5 rounded-xs bg-[#C9A876] shrink-0" />
-                          <span>Total Omset: <strong className="font-mono text-[#C9A876] font-bold">{formatRupiah(revVal)}</strong></span>
-                        </div>
+                    <div
+                      key={idx}
+                      className="flex-1 flex flex-col items-center justify-end h-full group relative max-w-[48px] px-1"
+                    >
+                      {/* Tooltip on Hover */}
+                      <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute bottom-full mb-2 bg-[#0E1230] text-white text-[10.5px] py-1.5 px-2.5 rounded-lg whitespace-nowrap pointer-events-none shadow-lg z-30 border border-[#C9A876]/30">
+                        <p className="font-bold font-albert text-[#C9A876]">{item.displayLabel || item.date}</p>
+                        <p className="text-white mt-0.5">{formatRupiah(item.revenue)}</p>
+                        <p className="text-[9.5px] text-[#8B93B8]">{item.orders} Order</p>
                       </div>
 
-                      {/* Single Bar Column with Theme Color Gradient */}
-                      <div className="w-full max-w-[36px] flex flex-col justify-end h-full relative">
-                        {/* Render bar ONLY if height > 0 (completely empty when 0 data!) */}
-                        {heightPercent > 0 && (
-                          <div
-                            className="w-full rounded-t-xl bg-gradient-to-t from-[#181F4B] to-[#3B4B8C] group-hover:from-[#C9A876] group-hover:to-[#b3915f] group-hover:shadow-md transition-all duration-300 relative"
-                            style={{ height: `${heightPercent}%` }}
-                          >
-                            {/* Static nominal label ALWAYS visible anchored directly on top edge of bar */}
-                            <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-[10px] font-bold font-mono text-[#181F4B] bg-white/80 backdrop-blur-2xs px-1.5 py-0.5 rounded shadow-2xs whitespace-nowrap z-20">
-                              {formatShortRupiah(revVal)}
-                            </span>
-                          </div>
-                        )}
-                      </div>
+                      {/* Bar Fill */}
+                      <div
+                        style={{ height: `${Math.max(4, heightPercent)}%` }}
+                        className="w-full rounded-t-md bg-gradient-to-t from-[#181F4B] to-[#C9A876] group-hover:from-[#0E1230] group-hover:to-[#DEBE91] transition-all duration-300 shadow-xs"
+                      />
 
                       {/* X-Axis Label */}
-                      <span className="absolute -bottom-6 text-[11px] font-medium text-[#6B7088] font-source truncate max-w-[60px] text-center group-hover:text-[#181F4B] group-hover:font-bold transition">
-                        {item.displayLabel || item.date?.slice(5)}
+                      <span className="absolute -bottom-5 text-[10px] font-semibold text-[#6B7088] truncate max-w-[48px]">
+                        {item.displayLabel || item.date}
                       </span>
                     </div>
                   );
-                })
-              ) : (
-                <div className="w-full h-full flex flex-col items-center justify-center text-xs text-[#6B7088] space-y-2">
-                  <BarChart3 className="w-8 h-8 text-[#E7E8F0]" />
-                  <p>Belum ada data tren penjualan untuk periode ini.</p>
-                </div>
-              )}
+                })}
+              </div>
             </div>
-          </div>
-
-          <div className="mt-4 flex items-center justify-between text-xs text-[#6B7088]">
-            <span>Data diperbarui secara realtime dari database backend.</span>
-            <Link
-              href="/orders"
-              className="text-[#181F4B] font-semibold hover:text-[#C9A876] transition flex items-center gap-1 font-albert"
-            >
-              <span>Lihat Semua Pesanan</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
-          </div>
+          )}
         </div>
+      </div>
 
-        {/* Quick Recent Orders Widget (1 col) */}
-        <div className="bg-white p-6 rounded-2xl border border-[#E7E8F0] shadow-xs flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-base font-bold font-albert text-[#181F4B]">
-                Pesanan Terbaru
-              </h2>
-              <Link
-                href="/orders"
-                className="text-xs text-[#C9A876] font-semibold hover:underline"
-              >
-                Lihat Semua
-              </Link>
-            </div>
-
-            <div className="space-y-3">
-              {stats?.recentOrders && stats.recentOrders.length > 0 ? (
-                stats.recentOrders.map((order) => (
-                  <div
-                    key={order.id}
-                    className="p-3.5 rounded-xl bg-[#F4F5F9] border border-[#E7E8F0] hover:border-[#C9A876]/50 transition flex items-center justify-between gap-3 group"
-                  >
-                    <div className="overflow-hidden text-xs">
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold font-mono text-[#181F4B]">
-                          {order.orderNumber}
-                        </span>
-                        {getStatusBadge(order.orderStatus)}
-                      </div>
-                      <p className="text-[#1E202B] font-medium mt-1 truncate">
-                        {order.customerName}
-                      </p>
-                      <p className="text-[11px] text-[#6B7088]">
-                        {formatRupiah(order.total)} • {getPaymentBadge(order.paymentStatus)}
-                      </p>
-                    </div>
-
-                    <Link
-                      href={`/orders/${order.id}`}
-                      className="p-2 rounded-lg bg-white border border-[#E7E8F0] text-[#6B7088] group-hover:text-[#181F4B] group-hover:border-[#C9A876] transition"
-                      title="Lihat Detail"
-                    >
-                      <Eye className="w-4 h-4" />
-                    </Link>
-                  </div>
-                ))
-              ) : (
-                <div className="py-12 text-center text-xs text-[#6B7088]">
-                  <Coffee className="w-8 h-8 text-[#E7E8F0] mx-auto mb-2" />
-                  <p>Belum ada pesanan masuk.</p>
-                </div>
-              )}
-            </div>
+      {/* Recent Orders Table Card */}
+      <div className="bg-white rounded-xl border border-[#E7E8F0] shadow-xs overflow-hidden">
+        <div className="p-4 border-b border-[#E7E8F0] bg-[#FAFAFD] flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <h2 className="font-albert font-bold text-xs text-[#181F4B] uppercase tracking-wider">
+              5 Transaksi Terkini
+            </h2>
+            <Badge variant="navy">Live</Badge>
           </div>
-
-          <Link
-            href="/orders"
-            className="mt-4 w-full py-2.5 bg-[#F6F3EC] hover:bg-[#C9A876]/20 border border-[#C9A876]/40 text-[#181F4B] font-bold rounded-xl text-xs transition flex items-center justify-center gap-2 font-albert"
-          >
-            <span>Buka Live Orders Table</span>
-            <ArrowRight className="w-4 h-4 text-[#181F4B]" />
+          <Link href="/orders">
+            <Button variant="ghost" size="sm" icon={<ArrowRight className="w-3.5 h-3.5" />}>
+              Lihat Semua Orders
+            </Button>
           </Link>
         </div>
+
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Order #</TableHead>
+              <TableHead>Pelanggan</TableHead>
+              {isSuperAdmin && !selectedOutletId && <TableHead>Outlet</TableHead>}
+              <TableHead>Total Tagihan</TableHead>
+              <TableHead>Status Bayar</TableHead>
+              <TableHead>Status Order</TableHead>
+              <TableHead className="text-right">Aksi</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {loading ? (
+              Array.from({ length: 4 }).map((_, i) => (
+                <TableRow key={i}>
+                  <TableCell colSpan={isSuperAdmin && !selectedOutletId ? 7 : 6} className="py-3">
+                    <Skeleton className="h-4 w-full" />
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : !stats?.recentOrders || stats.recentOrders.length === 0 ? (
+              <TableEmptyState
+                icon={<Coffee className="w-8 h-8 text-[#C9A876]" />}
+                title="Belum ada transaksi hari ini"
+                description="Pesanan baru akan otomatis muncul di sini."
+              />
+            ) : (
+              stats.recentOrders.map((ord) => (
+                <TableRow key={ord.id}>
+                  <TableCell className="font-bold font-albert text-[#181F4B]">
+                    <Link href={`/orders/${ord.id}`} className="hover:text-[#C9A876] hover:underline">
+                      {ord.orderNumber}
+                    </Link>
+                  </TableCell>
+                  <TableCell className="font-medium text-xs text-[#1E202B]">
+                    {ord.customerName || 'Tamu (Guest)'}
+                  </TableCell>
+                  {isSuperAdmin && !selectedOutletId && (
+                    <TableCell className="text-xs text-[#6B7088]">
+                      {ord.outletName || '-'}
+                    </TableCell>
+                  )}
+                  <TableCell className="font-bold text-[#181F4B] font-albert text-xs">
+                    {formatRupiah(ord.total)}
+                  </TableCell>
+                  <TableCell>
+                    <span
+                      className={`inline-flex items-center gap-1.5 text-xs font-bold ${
+                        ord.paymentStatus === 'paid' ? 'text-[#3E8A5A]' : 'text-[#C9576B]'
+                      }`}
+                    >
+                      <span
+                        className={`w-1.5 h-1.5 rounded-full ${
+                          ord.paymentStatus === 'paid' ? 'bg-[#3E8A5A]' : 'bg-[#C9576B]'
+                        }`}
+                      />
+                      {ord.paymentStatus === 'paid' ? 'Lunas' : 'Unpaid'}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <OrderStatusBadge status={ord.orderStatus} />
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Link href={`/orders/${ord.id}`}>
+                      <Button variant="secondary" size="sm" icon={<Eye className="w-3 h-3" />}>
+                        Detail
+                      </Button>
+                    </Link>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
       </div>
     </div>
   );
