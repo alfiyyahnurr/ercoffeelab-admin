@@ -54,10 +54,26 @@ export async function apiFetch<T>(
   }
 
   if (!response.ok) {
-    const errorMessage =
+    let errorMessage =
       data && typeof data === 'object' && 'error' in data && data.error
         ? (data as { error: string }).error
-        : `Request failed with status ${response.status}: ${response.statusText}`;
+        : null;
+
+    if (!errorMessage) {
+      if (response.status === 401) {
+        errorMessage = 'Sesi Anda telah berakhir. Silakan login kembali.';
+      } else if (response.status === 403) {
+        errorMessage = 'Anda tidak memiliki hak akses untuk melakukan aksi ini.';
+      } else if (response.status === 404) {
+        errorMessage = 'Data atau endpoint yang dituju tidak ditemukan (404).';
+      } else if (response.status >= 500) {
+        errorMessage = `Terjadi kendala pada server backend (Status ${response.status}). Silakan coba lagi.`;
+      } else {
+        errorMessage = response.statusText
+          ? `Request gagal (${response.status}: ${response.statusText})`
+          : `Request gagal dengan status ${response.status}`;
+      }
+    }
 
     throw new Error(errorMessage);
   }
