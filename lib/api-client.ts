@@ -32,7 +32,7 @@ export async function apiFetch<T>(
 
   const contentType = response.headers.get('content-type');
   const isJson = contentType && contentType.includes('application/json');
-  
+
   let data: any = null;
   if (isJson) {
     const rawText = await response.text();

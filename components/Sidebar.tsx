@@ -57,10 +57,10 @@ const MENU_ITEMS: MenuItem[] = [
     category: 'OPERASIONAL',
   },
   {
-    label: 'Outlets Governance',
+    label: 'Outlet & Delivery',
     href: '/outlets',
     icon: Store,
-    category: 'MANAJEMEN',
+    category: 'OPERASIONAL',
   },
   {
     label: 'Master Menu',
@@ -119,16 +119,7 @@ export default function Sidebar({
 
   const visibleMenuItems = MENU_ITEMS.filter(
     (item) => !item.superAdminOnly || isSuperAdmin
-  ).map((item) => {
-    if (item.href === '/outlets') {
-      return {
-        ...item,
-        label: isSuperAdmin ? 'Outlets Governance' : 'Pengaturan Outlet & Delivery',
-        category: isSuperAdmin ? 'MANAJEMEN' : 'OPERASIONAL',
-      };
-    }
-    return item;
-  });
+  );
 
   const handleLogout = async () => {
     setLoggingOut(true);
@@ -196,7 +187,6 @@ export default function Sidebar({
             // Section Category Header (when expanded)
             const showCategoryHeader =
               !collapsed &&
-              isSuperAdmin &&
               (idx === 0 || visibleMenuItems[idx - 1].category !== item.category);
 
             return (

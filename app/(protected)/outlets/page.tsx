@@ -242,8 +242,7 @@ export default function OutletsGovernancePage() {
         prev.map((o) => (o.id === outlet.id ? { ...o, isOpen: nextStatus } : o))
       );
       setInfoMessage(
-        `Status operasional "${outlet.name}" diubah menjadi ${
-          nextStatus ? 'BEROPERASI (OPEN)' : 'TUTUP SEMENTARA'
+        `Status operasional "${outlet.name}" diubah menjadi ${nextStatus ? 'BEROPERASI (OPEN)' : 'TUTUP SEMENTARA'
         }.`
       );
     } catch (err: any) {
@@ -350,12 +349,12 @@ export default function OutletsGovernancePage() {
         <div>
           <h1 className="text-2xl font-bold font-albert text-[#181F4B] flex items-center gap-2">
             <Store className="w-6 h-6 text-[#C9A876]" />
-            {isSuperAdmin ? 'Outlets Governance' : 'Pengaturan Outlet & Delivery'}
+            Outlet & Delivery
           </h1>
           <p className="text-xs text-[#6B7088] mt-0.5">
             {isSuperAdmin
-              ? 'Kelola cabang toko fisik ERCoffeeLab, jam operasional, lokasi maps, dan status buka/tutup toko.'
-              : 'Kelola jam operasional, radius jarak maksimal, dan tarif biaya delivery cabang Anda.'}
+              ? 'Kelola data cabang toko fisik ERCoffeeLab, jam operasional, lokasi maps, serta konfigurasi radius dan tarif delivery.'
+              : 'Kelola jam operasional, status buka/tutup toko, serta konfigurasi radius dan tarif delivery cabang Anda.'}
           </p>
         </div>
 
@@ -454,11 +453,10 @@ export default function OutletsGovernancePage() {
                     <button
                       onClick={() => handleToggleOperating(outlet)}
                       disabled={isUpdating}
-                      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold transition-all duration-150 cursor-pointer disabled:opacity-50 hover:scale-105 active:scale-95 ${
-                        outlet.isOpen
+                      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold transition-all duration-150 cursor-pointer disabled:opacity-50 hover:scale-105 active:scale-95 ${outlet.isOpen
                           ? 'bg-[#EAF5EE] text-[#3E8A5A] border border-[#C6E7D2] hover:bg-[#d8eedf]'
                           : 'bg-[#FDF0F2] text-[#C9576B] border border-[#FAF1F3] hover:bg-[#fae2e6]'
-                      }`}
+                        }`}
                       title="Klik untuk ubah status operasional toko"
                     >
                       {outlet.isOpen ? (
