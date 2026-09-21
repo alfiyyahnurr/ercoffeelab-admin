@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, FormEvent } from 'react';
 import { apiFetch } from '@/lib/api-client';
 import { getStoredToken, parseStaffToken, StaffPayload } from '@/lib/auth';
+import { useOutletContext } from '@/context/OutletContext';
 import Pagination from '@/components/Pagination';
 import {
   Store,
@@ -48,13 +49,14 @@ interface OutletItem {
 }
 
 export default function OutletsGovernancePage() {
+  const { staff: contextStaff, isSuperAdmin: contextIsSuperAdmin, selectedOutletId } = useOutletContext();
   const [outlets, setOutlets] = useState<OutletItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [infoMessage, setInfoMessage] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [staff, setStaff] = useState<StaffPayload | null>(null);
+  const [localStaff, setLocalStaff] = useState<StaffPayload | null>(null);
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
@@ -87,7 +89,7 @@ export default function OutletsGovernancePage() {
     const token = getStoredToken();
     if (token) {
       const s = parseStaffToken(token);
-      setStaff(s);
+      setLocalStaff(s);
     }
   }, []);
 
@@ -317,13 +319,18 @@ export default function OutletsGovernancePage() {
     }
   };
 
-  const isSuperAdmin = staff?.role === 'super_admin';
-  const outletAdminId = staff?.outletId ? Number(staff.outletId) : null;
+  const currentStaff = contextStaff || localStaff;
+  const isSuperAdmin = contextIsSuperAdmin || currentStaff?.role === 'super_admin';
+  const effectiveOutletId = currentStaff?.outletId ?? selectedOutletId ?? null;
 
   const filteredOutlets = outlets
     .filter((o) => {
-      if (!isSuperAdmin && outletAdminId) {
-        return Number(o.id) === outletAdminId;
+      // Jika Outlet Admin: HANYA tampilkan cabang miliknya sendiri
+      if (!isSuperAdmin) {
+        if (effectiveOutletId) {
+          return Number(o.id) === Number(effectiveOutletId);
+        }
+        return false;
       }
       return true;
     })
@@ -347,14 +354,22 @@ export default function OutletsGovernancePage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold font-albert text-[#181F4B] flex items-center gap-2">
-            <Store className="w-6 h-6 text-[#C9A876]" />
-            Outlet & Delivery
-          </h1>
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <h1 className="text-2xl font-bold font-albert text-[#181F4B] flex items-center gap-2">
+              <Store className="w-6 h-6 text-[#C9A876]" />
+              Outlet & Delivery
+            </h1>
+            {!isSuperAdmin && filteredOutlets[0] && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#181F4B] text-[#C9A876] text-xs font-bold font-albert shadow-xs">
+                <Store className="w-3.5 h-3.5" />
+                <span>{filteredOutlets[0].name}</span>
+              </span>
+            )}
+          </div>
           <p className="text-xs text-[#6B7088] mt-0.5">
             {isSuperAdmin
               ? 'Kelola data cabang toko fisik ERCoffeeLab, jam operasional, lokasi maps, serta konfigurasi radius dan tarif delivery.'
-              : 'Kelola jam operasional, status buka/tutup toko, serta konfigurasi radius dan tarif delivery cabang Anda.'}
+              : `Kelola jam operasional, status buka/tutup toko, serta konfigurasi radius dan tarif delivery cabang ${filteredOutlets[0]?.name || 'Anda'}.`}
           </p>
         </div>
 
