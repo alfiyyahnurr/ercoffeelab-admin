@@ -13,7 +13,6 @@ interface JWTPayload {
 const SUPER_ADMIN_ONLY_ROUTES = [
   '/staff',
   '/products',
-  '/outlets',
   '/vouchers',
   '/loyalty',
   '/notifications',
