@@ -57,16 +57,15 @@ const MENU_ITEMS: MenuItem[] = [
     category: 'OPERASIONAL',
   },
   {
-    label: 'Master Menu',
-    href: '/products',
-    icon: Package,
-    superAdminOnly: true,
-    category: 'MANAJEMEN',
-  },
-  {
     label: 'Outlets Governance',
     href: '/outlets',
     icon: Store,
+    category: 'MANAJEMEN',
+  },
+  {
+    label: 'Master Menu',
+    href: '/products',
+    icon: Package,
     superAdminOnly: true,
     category: 'MANAJEMEN',
   },
@@ -120,7 +119,16 @@ export default function Sidebar({
 
   const visibleMenuItems = MENU_ITEMS.filter(
     (item) => !item.superAdminOnly || isSuperAdmin
-  );
+  ).map((item) => {
+    if (item.href === '/outlets') {
+      return {
+        ...item,
+        label: isSuperAdmin ? 'Outlets Governance' : 'Pengaturan Outlet & Delivery',
+        category: isSuperAdmin ? 'MANAJEMEN' : 'OPERASIONAL',
+      };
+    }
+    return item;
+  });
 
   const handleLogout = async () => {
     setLoggingOut(true);

@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback, FormEvent } from 'react';
-import { useRouter } from 'next/navigation';
 import { apiFetch } from '@/lib/api-client';
 import { getStoredToken, parseStaffToken, StaffPayload } from '@/lib/auth';
 import Pagination from '@/components/Pagination';
@@ -13,7 +12,6 @@ import {
   RefreshCw,
   X,
   AlertCircle,
-  ShieldAlert,
   MapPin,
   Clock,
   Phone,
@@ -23,7 +21,6 @@ import {
   Navigation,
   Truck,
   Trash2,
-  Settings,
 } from 'lucide-react';
 
 interface DeliveryTierItem {
@@ -51,7 +48,6 @@ interface OutletItem {
 }
 
 export default function OutletsGovernancePage() {
-  const router = useRouter();
   const [outlets, setOutlets] = useState<OutletItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<number | null>(null);
@@ -92,11 +88,8 @@ export default function OutletsGovernancePage() {
     if (token) {
       const s = parseStaffToken(token);
       setStaff(s);
-      if (s && s.role !== 'super_admin') {
-        router.push('/dashboard');
-      }
     }
-  }, [router]);
+  }, []);
 
   const fetchOutlets = useCallback(async () => {
     setLoading(true);
@@ -325,32 +318,30 @@ export default function OutletsGovernancePage() {
     }
   };
 
-  const filteredOutlets = outlets.filter((o) => {
-    const q = searchQuery.toLowerCase().trim();
-    if (!q) return true;
-    return (
-      o.name.toLowerCase().includes(q) ||
-      o.address.toLowerCase().includes(q)
-    );
-  });
+  const isSuperAdmin = staff?.role === 'super_admin';
+  const outletAdminId = staff?.outletId ? Number(staff.outletId) : null;
+
+  const filteredOutlets = outlets
+    .filter((o) => {
+      if (!isSuperAdmin && outletAdminId) {
+        return Number(o.id) === outletAdminId;
+      }
+      return true;
+    })
+    .filter((o) => {
+      const q = searchQuery.toLowerCase().trim();
+      if (!q) return true;
+      return (
+        o.name.toLowerCase().includes(q) ||
+        o.address.toLowerCase().includes(q)
+      );
+    });
 
   const totalPages = Math.max(1, Math.ceil(filteredOutlets.length / itemsPerPage));
   const paginatedOutlets = filteredOutlets.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
-
-  if (staff && staff.role !== 'super_admin') {
-    return (
-      <div className="py-24 text-center space-y-4 font-source max-w-md mx-auto">
-        <ShieldAlert className="w-12 h-12 text-[#C9576B] mx-auto" />
-        <h2 className="text-lg font-bold font-albert text-[#181F4B]">Akses Dibatasi</h2>
-        <p className="text-xs text-[#6B7088]">
-          Halaman Outlets Governance hanya dapat diakses oleh Super Admin.
-        </p>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6 font-source">
@@ -359,10 +350,12 @@ export default function OutletsGovernancePage() {
         <div>
           <h1 className="text-2xl font-bold font-albert text-[#181F4B] flex items-center gap-2">
             <Store className="w-6 h-6 text-[#C9A876]" />
-            Outlets Governance
+            {isSuperAdmin ? 'Outlets Governance' : 'Pengaturan Outlet & Delivery'}
           </h1>
           <p className="text-xs text-[#6B7088] mt-0.5">
-            Kelola cabang toko fisik ERCoffeeLab, jam operasional, lokasi maps, dan status buka/tutup toko.
+            {isSuperAdmin
+              ? 'Kelola cabang toko fisik ERCoffeeLab, jam operasional, lokasi maps, dan status buka/tutup toko.'
+              : 'Kelola jam operasional, radius jarak maksimal, dan tarif biaya delivery cabang Anda.'}
           </p>
         </div>
 
@@ -376,13 +369,15 @@ export default function OutletsGovernancePage() {
             <span>Refresh</span>
           </button>
 
-          <button
-            onClick={openAddModal}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-[#181F4B] hover:bg-[#0E1230] text-[#C9A876] rounded-xl text-xs font-bold font-albert transition-all duration-150 shadow-md cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Tambah Outlet Cabang</span>
-          </button>
+          {isSuperAdmin && (
+            <button
+              onClick={openAddModal}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-[#181F4B] hover:bg-[#0E1230] text-[#C9A876] rounded-xl text-xs font-bold font-albert transition-all duration-150 shadow-md cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Tambah Outlet Cabang</span>
+            </button>
+          )}
         </div>
       </div>
 
