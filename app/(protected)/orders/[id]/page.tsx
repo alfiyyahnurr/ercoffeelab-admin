@@ -57,6 +57,8 @@ interface OrderDetailData {
   outletName: string;
   fulfillmentType: 'pickup' | 'delivery';
   deliveryAddress?: string;
+  deliveryFee?: number;
+  deliveryDistanceKm?: number | null;
   paymentMethodId: number;
   paymentMethodName?: string;
   subtotal: number;
@@ -324,16 +326,24 @@ export default function OrderDetailPage({
                 <span>Subtotal Menu:</span>
                 <span className="font-semibold text-[#1E202B]">{formatRupiah(order.subtotal)}</span>
               </div>
-              {order.discount > 0 && (
-                <div className="flex justify-between text-[#C9576B]">
-                  <span>Diskon Voucher:</span>
-                  <span className="font-bold">-{formatRupiah(order.discount)}</span>
+              {(order.fulfillmentType === 'delivery' || (order.deliveryFee ?? 0) > 0) && (
+                <div className="flex justify-between text-[#6B7088]">
+                  <span>
+                    Ongkos Kirim (Delivery){order.deliveryDistanceKm ? ` [${order.deliveryDistanceKm} km]` : ''}:
+                  </span>
+                  <span className="font-semibold text-[#1E202B]">{formatRupiah(order.deliveryFee || 0)}</span>
                 </div>
               )}
               {order.serviceFee > 0 && (
                 <div className="flex justify-between text-[#6B7088]">
-                  <span>Biaya Ongkir / Layanan:</span>
+                  <span>Biaya Layanan:</span>
                   <span className="font-semibold text-[#1E202B]">{formatRupiah(order.serviceFee)}</span>
+                </div>
+              )}
+              {order.discount > 0 && (
+                <div className="flex justify-between text-[#C9576B]">
+                  <span>Diskon Voucher:</span>
+                  <span className="font-bold">-{formatRupiah(order.discount)}</span>
                 </div>
               )}
               <div className="flex justify-between text-sm font-bold text-[#181F4B] font-albert pt-2 border-t border-[#E7E8F0]">
