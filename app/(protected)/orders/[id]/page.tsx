@@ -96,6 +96,7 @@ export default function OrderDetailPage({
 
   // Cancel Confirm Dialog State
   const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [syncingPayment, setSyncingPayment] = useState(false);
 
   const fetchOrderDetail = useCallback(async () => {
     setLoading(true);
@@ -116,6 +117,30 @@ export default function OrderDetailPage({
   useEffect(() => {
     fetchOrderDetail();
   }, [fetchOrderDetail]);
+
+  const handleSyncPaymentStatus = async () => {
+    if (!order || syncingPayment) return;
+    setSyncingPayment(true);
+    try {
+      const res = await apiFetch<{ status: string; paid: boolean; message?: string }>(
+        '/api/payments/midtrans/check-status',
+        {
+          method: 'POST',
+          body: JSON.stringify({ orderId: order.id }),
+        }
+      );
+      if (res?.paid) {
+        alert('Pembayaran terkonfirmasi LUNAS dari Midtrans.');
+      } else {
+        alert(res?.message || 'Status transaksi masih menunggu pembayaran di Midtrans.');
+      }
+      await fetchOrderDetail();
+    } catch (err: any) {
+      alert(err?.message || 'Gagal memeriksa status pembayaran ke Midtrans.');
+    } finally {
+      setSyncingPayment(false);
+    }
+  };
 
   const handleUpdateStatus = async (newStatus: string) => {
     setUpdating(true);
@@ -236,6 +261,18 @@ export default function OrderDetailPage({
               icon={<CheckSquare className="w-4 h-4" />}
             >
               Selesaikan Pesanan (Completed)
+            </Button>
+          )}
+
+          {order.paymentStatus === 'unpaid' && (
+            <Button
+              variant="outline"
+              size="sm"
+              loading={syncingPayment}
+              onClick={handleSyncPaymentStatus}
+              icon={<RefreshCw className="w-3.5 h-3.5" />}
+            >
+              Cek Status Midtrans
             </Button>
           )}
 
