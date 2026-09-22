@@ -54,6 +54,14 @@ export async function apiFetch<T>(
   }
 
   if (!response.ok) {
+    if (response.status === 401 && typeof window !== 'undefined') {
+      const { removeStoredToken } = require('./auth');
+      removeStoredToken();
+      if (!window.location.pathname.startsWith('/login')) {
+        window.location.href = '/login?reason=session_expired';
+      }
+    }
+
     let errorMessage =
       data && typeof data === 'object' && 'error' in data && data.error
         ? (data as { error: string }).error
@@ -61,7 +69,7 @@ export async function apiFetch<T>(
 
     if (!errorMessage) {
       if (response.status === 401) {
-        errorMessage = 'Sesi Anda telah berakhir. Silakan login kembali.';
+        errorMessage = 'Sesi login Anda telah berakhir. Silakan login kembali.';
       } else if (response.status === 403) {
         errorMessage = 'Anda tidak memiliki hak akses untuk melakukan aksi ini.';
       } else if (response.status === 404) {

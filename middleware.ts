@@ -75,12 +75,14 @@ export function middleware(request: NextRequest) {
   const sessionToken = request.cookies.get('session')?.value;
 
   let payload: JWTPayload | null = null;
+  let isExpired = false;
   if (sessionToken) {
     payload = parseJwtPayload(sessionToken);
 
     // Check expiration if exp is present
-    if (payload?.exp && payload.exp * 1000 < Date.now()) {
+    if (payload?.exp && payload.exp * 1000 <= Date.now()) {
       payload = null;
+      isExpired = true;
     }
   }
 
@@ -89,7 +91,16 @@ export function middleware(request: NextRequest) {
     if (payload) {
       return NextResponse.redirect(new URL('/dashboard', request.url));
     }
-    return NextResponse.redirect(new URL('/login', request.url));
+    const loginUrl = new URL('/login', request.url);
+    if (isExpired) {
+      loginUrl.searchParams.set('reason', 'daily_cycle_expired');
+    }
+    const res = NextResponse.redirect(loginUrl);
+    if (isExpired) {
+      res.cookies.delete('session');
+      res.cookies.delete('ercoffeelab_role');
+    }
+    return res;
   }
 
   // 2. Auth routes (/login, /sso-callback): if already logged in, redirect to dashboard
@@ -105,8 +116,17 @@ export function middleware(request: NextRequest) {
 
   if (!isPublicRoute && !payload) {
     const loginUrl = new URL('/login', request.url);
-    loginUrl.searchParams.set('from', pathname);
-    return NextResponse.redirect(loginUrl);
+    if (isExpired) {
+      loginUrl.searchParams.set('reason', 'daily_cycle_expired');
+    } else {
+      loginUrl.searchParams.set('from', pathname);
+    }
+    const res = NextResponse.redirect(loginUrl);
+    if (isExpired) {
+      res.cookies.delete('session');
+      res.cookies.delete('ercoffeelab_role');
+    }
+    return res;
   }
 
   // 4. Super-admin role restriction check

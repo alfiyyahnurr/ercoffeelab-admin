@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Sidebar from '@/components/Sidebar';
 import Topbar from '@/components/Topbar';
 import OrderAlertToast from '@/components/OrderAlertToast';
-import { getStoredToken, parseStaffToken, StaffPayload } from '@/lib/auth';
+import { getStoredToken, parseStaffToken, StaffPayload, isTokenExpired, removeStoredToken, getMsUntilMidnight } from '@/lib/auth';
 import { apiFetch } from '@/lib/api-client';
 import { OutletProvider, useOutletContext } from '@/context/OutletContext';
 
@@ -14,6 +14,7 @@ function InnerLayout({ children }: { children: React.ReactNode }) {
 
   const { staff, selectedOutletId, setSelectedOutletId } = useOutletContext();
 
+  // Active Daily Session Lifecycle Manager (1-Day Midnight 00:00 Auto-Logout)
   useEffect(() => {
     setMounted(true);
     const token = getStoredToken();
@@ -24,6 +25,54 @@ function InnerLayout({ children }: { children: React.ReactNode }) {
         body: JSON.stringify({ token }),
       }).catch(() => null);
     }
+
+    const handleLogoutSessionExpired = () => {
+      removeStoredToken();
+      if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
+        window.location.href = '/login?reason=daily_cycle_expired';
+      }
+    };
+
+    // 1. Immediate validation check
+    const currentToken = typeof window !== 'undefined' ? localStorage.getItem('ercoffeelab_staff_token') : null;
+    if (!currentToken || isTokenExpired(currentToken)) {
+      handleLogoutSessionExpired();
+      return;
+    }
+
+    // 2. Schedule precise timer for midnight 00:00:00
+    const msUntilMidnight = getMsUntilMidnight();
+    const midnightTimer = setTimeout(() => {
+      handleLogoutSessionExpired();
+    }, msUntilMidnight);
+
+    // 3. Periodic heartbeat interval check (every 30 seconds)
+    const interval = setInterval(() => {
+      const liveToken = typeof window !== 'undefined' ? localStorage.getItem('ercoffeelab_staff_token') : null;
+      if (!liveToken || isTokenExpired(liveToken)) {
+        handleLogoutSessionExpired();
+      }
+    }, 30000);
+
+    // 4. Tab visibility change & window focus listener (waking up laptop or switching back to tab next day)
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        const liveToken = typeof window !== 'undefined' ? localStorage.getItem('ercoffeelab_staff_token') : null;
+        if (!liveToken || isTokenExpired(liveToken)) {
+          handleLogoutSessionExpired();
+        }
+      }
+    };
+
+    window.addEventListener('visibilitychange', onVisibilityChange);
+    window.addEventListener('focus', onVisibilityChange);
+
+    return () => {
+      clearTimeout(midnightTimer);
+      clearInterval(interval);
+      window.removeEventListener('visibilitychange', onVisibilityChange);
+      window.removeEventListener('focus', onVisibilityChange);
+    };
   }, []);
 
   return (
