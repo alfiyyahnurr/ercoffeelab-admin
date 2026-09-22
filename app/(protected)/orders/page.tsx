@@ -22,6 +22,9 @@ import {
   Globe,
   Clock,
   TrendingUp,
+  ChefHat,
+  PackageCheck,
+  CheckCheck,
 } from 'lucide-react';
 
 export interface OrderItem {
@@ -400,37 +403,43 @@ export default function OrdersPage() {
                           {isIncoming && (
                             <button
                               onClick={() => handleQuickStatus(order.id, 'preparing')}
-                              className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-[#C9A876] text-[#181F4B] hover:bg-[#b89565] transition-colors"
+                              className="w-8 h-8 rounded-lg bg-[#FFF8EC] border border-[#F7E5C4] text-[#C9A876] hover:bg-[#C9A876] hover:text-[#181F4B] flex items-center justify-center shadow-xs transition-all duration-150 hover:scale-105 active:scale-95 cursor-pointer"
                               title="Mulai Buat Pesanan"
+                              aria-label="Mulai Buat Pesanan"
                             >
-                              Mulai Buat
+                              <ChefHat className="w-4 h-4" />
                             </button>
                           )}
 
                           {isPreparing && (
                             <button
                               onClick={() => handleQuickStatus(order.id, order.fulfillmentType === 'delivery' ? 'on_delivery' : 'ready')}
-                              className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-[#181F4B] text-white hover:bg-[#232c66] transition-colors"
-                              title="Tandai Siap"
+                              className="w-8 h-8 rounded-lg bg-[#EDF0FA] border border-[#DCE2F5] text-[#181F4B] hover:bg-[#181F4B] hover:text-[#C9A876] flex items-center justify-center shadow-xs transition-all duration-150 hover:scale-105 active:scale-95 cursor-pointer"
+                              title={order.fulfillmentType === 'delivery' ? 'Tandai Siap Dikirim' : 'Tandai Siap Diambil'}
+                              aria-label={order.fulfillmentType === 'delivery' ? 'Tandai Siap Dikirim' : 'Tandai Siap Diambil'}
                             >
-                              Tandai Siap
+                              <PackageCheck className="w-4 h-4" />
                             </button>
                           )}
 
                           {isReady && (
                             <button
                               onClick={() => handleQuickStatus(order.id, 'completed')}
-                              className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-[#3E8A5A] text-white hover:bg-[#34744b] transition-colors"
+                              className="w-8 h-8 rounded-lg bg-[#EAF7EE] border border-[#CDEED6] text-[#3E8A5A] hover:bg-[#3E8A5A] hover:text-white flex items-center justify-center shadow-xs transition-all duration-150 hover:scale-105 active:scale-95 cursor-pointer"
                               title="Selesaikan Pesanan"
+                              aria-label="Selesaikan Pesanan"
                             >
-                              Selesaikan
+                              <CheckCheck className="w-4 h-4" />
                             </button>
                           )}
 
-                          <Link href={`/orders/${order.id}`}>
-                            <Button variant="secondary" size="sm" icon={<Eye className="w-3.5 h-3.5" />}>
-                              Detail
-                            </Button>
+                          <Link
+                            href={`/orders/${order.id}`}
+                            className="w-8 h-8 rounded-lg bg-[#F4F5F9] border border-[#E7E8F0] text-[#181F4B] hover:bg-[#EAEBF2] hover:border-[#181F4B] flex items-center justify-center shadow-xs transition-all duration-150 hover:scale-105 active:scale-95"
+                            title="Lihat Detail Transaksi"
+                            aria-label="Lihat Detail Transaksi"
+                          >
+                            <Eye className="w-4 h-4" />
                           </Link>
                         </div>
                       </TableCell>
