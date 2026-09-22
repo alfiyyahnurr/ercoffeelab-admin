@@ -417,165 +417,297 @@ export default function OutletsGovernancePage() {
         </div>
       )}
 
-      {/* Search Bar */}
-      <div className="bg-white p-4 rounded-2xl border border-[#E7E8F0] shadow-xs flex items-center justify-between">
-        <div className="relative w-full max-w-md">
-          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#6B7088]" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Cari nama outlet atau alamat lokasi..."
-            className="w-full pl-9 pr-4 py-2 bg-[#F4F5F9] border border-[#E7E8F0] rounded-xl text-xs text-[#1E202B] placeholder-[#6B7088] focus:outline-none focus:border-[#C9A876] transition"
-          />
-        </div>
-      </div>
-
-      {/* Outlets Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-        {loading ? (
-          <div className="col-span-full py-16 text-center text-[#6B7088]">
-            <div className="w-7 h-7 border-3 border-[#181F4B] border-t-transparent rounded-full animate-spin mx-auto mb-2" />
-            <p className="font-semibold text-sm">Memuat cabang outlet...</p>
+      {/* Search Bar (Super Admin Only) */}
+      {isSuperAdmin && (
+        <div className="bg-white p-4 rounded-2xl border border-[#E7E8F0] shadow-xs flex items-center justify-between">
+          <div className="relative w-full max-w-md">
+            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#6B7088]" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Cari nama outlet atau alamat lokasi..."
+              className="w-full pl-9 pr-4 py-2 bg-[#F4F5F9] border border-[#E7E8F0] rounded-xl text-xs text-[#1E202B] placeholder-[#6B7088] focus:outline-none focus:border-[#C9A876] transition"
+            />
           </div>
-        ) : paginatedOutlets.length > 0 ? (
-          paginatedOutlets.map((outlet) => {
-            const isUpdating = updatingId === outlet.id;
+        </div>
+      )}
 
-            return (
-              <div
-                key={outlet.id}
-                className="bg-white p-5 rounded-2xl border border-[#E7E8F0] hover:border-[#C9A876]/40 transition-all duration-200 shadow-xs flex flex-col justify-between space-y-4 hover:shadow-md"
-              >
-                <div className="space-y-3">
-                  {/* Outlet Header & Operating Badge */}
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-10 h-10 rounded-xl bg-[#F6F3EC] border border-[#C9A876]/30 flex items-center justify-center text-[#C9A876] shrink-0">
-                        <Store className="w-5 h-5" />
+      {/* Outlets Display */}
+      {isSuperAdmin ? (
+        /* Super Admin: Multi-column Grid Layout */
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {loading ? (
+            <div className="col-span-full py-16 text-center text-[#6B7088]">
+              <div className="w-7 h-7 border-3 border-[#181F4B] border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+              <p className="font-semibold text-sm">Memuat cabang outlet...</p>
+            </div>
+          ) : paginatedOutlets.length > 0 ? (
+            paginatedOutlets.map((outlet) => {
+              const isUpdating = updatingId === outlet.id;
+
+              return (
+                <div
+                  key={outlet.id}
+                  className="bg-white p-5 rounded-2xl border border-[#E7E8F0] hover:border-[#C9A876]/40 transition-all duration-200 shadow-xs flex flex-col justify-between space-y-4 hover:shadow-md"
+                >
+                  <div className="space-y-3">
+                    {/* Outlet Header & Operating Badge */}
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-10 h-10 rounded-xl bg-[#F6F3EC] border border-[#C9A876]/30 flex items-center justify-center text-[#C9A876] shrink-0">
+                          <Store className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-base font-albert text-[#181F4B]">
+                            {outlet.name}
+                          </h3>
+                          <p className="text-[10px] text-[#6B7088] font-mono">
+                            ID: #{outlet.id}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <h3 className="font-bold text-base font-albert text-[#181F4B]">
-                          {outlet.name}
-                        </h3>
-                        <p className="text-[10px] text-[#6B7088] font-mono">
-                          ID: #{outlet.id}
-                        </p>
-                      </div>
+
+                      {/* Toggle Status Switch */}
+                      <button
+                        onClick={() => handleToggleOperating(outlet)}
+                        disabled={isUpdating}
+                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold transition-all duration-150 cursor-pointer disabled:opacity-50 hover:scale-105 active:scale-95 ${outlet.isOpen
+                            ? 'bg-[#EAF5EE] text-[#3E8A5A] border border-[#C6E7D2] hover:bg-[#d8eedf]'
+                            : 'bg-[#FDF0F2] text-[#C9576B] border border-[#FAF1F3] hover:bg-[#fae2e6]'
+                          }`}
+                        title="Klik untuk ubah status operasional toko"
+                      >
+                        {outlet.isOpen ? (
+                          <>
+                            <CheckCircle2 className="w-3 h-3" />
+                            <span>AKTIF</span>
+                          </>
+                        ) : (
+                          <>
+                            <XCircle className="w-3 h-3" />
+                            <span>NONAKTIF</span>
+                          </>
+                        )}
+                      </button>
                     </div>
 
-                    {/* Toggle Status Switch */}
-                    <button
-                      onClick={() => handleToggleOperating(outlet)}
-                      disabled={isUpdating}
-                      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold transition-all duration-150 cursor-pointer disabled:opacity-50 hover:scale-105 active:scale-95 ${outlet.isOpen
-                          ? 'bg-[#EAF5EE] text-[#3E8A5A] border border-[#C6E7D2] hover:bg-[#d8eedf]'
-                          : 'bg-[#FDF0F2] text-[#C9576B] border border-[#FAF1F3] hover:bg-[#fae2e6]'
-                        }`}
-                      title="Klik untuk ubah status operasional toko"
-                    >
-                      {outlet.isOpen ? (
-                        <>
-                          <CheckCircle2 className="w-3 h-3" />
-                          <span>AKTIF</span>
-                        </>
-                      ) : (
-                        <>
-                          <XCircle className="w-3 h-3" />
-                          <span>NONAKTIF</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-
-                  {/* Details List */}
-                  <div className="space-y-2 pt-2 text-xs text-[#6B7088]">
-                    <div className="flex items-start gap-2">
-                      <MapPin className="w-4 h-4 text-[#C9A876] shrink-0 mt-0.5" />
-                      <span className="leading-relaxed text-[#1E202B]">
-                        {outlet.address}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-[#C9A876] shrink-0" />
-                      <span>
-                        Jam Buka:{' '}
-                        <strong className="text-[#181F4B]">
-                          {outlet.openHour || '07:00'} - {outlet.closeHour || '22:00'}
-                        </strong>
-                      </span>
-                    </div>
-
-                    {outlet.phone && (
-                      <div className="flex items-center gap-2">
-                        <Phone className="w-4 h-4 text-[#C9A876] shrink-0" />
-                        <span>{outlet.phone}</span>
-                      </div>
-                    )}
-
-                    {outlet.phone && (
-                      <div className="flex items-center gap-2">
-                        <Phone className="w-4 h-4 text-[#C9A876] shrink-0" />
-                        <span>{outlet.phone}</span>
-                      </div>
-                    )}
-
-                    {(outlet.latitude !== undefined && outlet.latitude !== null) && (
-                      <div className="flex items-center gap-2 text-[11px] font-mono text-[#6B7088]">
-                        <Navigation className="w-3.5 h-3.5 text-[#C9A876] shrink-0" />
-                        <span>
-                          {outlet.latitude}, {outlet.longitude}
+                    {/* Details List */}
+                    <div className="space-y-2 pt-2 text-xs text-[#6B7088]">
+                      <div className="flex items-start gap-2">
+                        <MapPin className="w-4 h-4 text-[#C9A876] shrink-0 mt-0.5" />
+                        <span className="leading-relaxed text-[#1E202B]">
+                          {outlet.address}
                         </span>
                       </div>
-                    )}
+
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-[#C9A876] shrink-0" />
+                        <span>
+                          Jam Buka:{' '}
+                          <strong className="text-[#181F4B]">
+                            {outlet.openHour || '07:00'} - {outlet.closeHour || '22:00'}
+                          </strong>
+                        </span>
+                      </div>
+
+                      {outlet.phone && (
+                        <div className="flex items-center gap-2">
+                          <Phone className="w-4 h-4 text-[#C9A876] shrink-0" />
+                          <span>{outlet.phone}</span>
+                        </div>
+                      )}
+
+                      {(outlet.latitude !== undefined && outlet.latitude !== null) && (
+                        <div className="flex items-center gap-2 text-[11px] font-mono text-[#6B7088]">
+                          <Navigation className="w-3.5 h-3.5 text-[#C9A876] shrink-0" />
+                          <span>
+                            {outlet.latitude}, {outlet.longitude}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Card Action Footer */}
+                  <div className="pt-3 border-t border-[#E7E8F0] grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => openEditModal(outlet)}
+                      className="py-2 px-3 bg-[#F4F5F9] hover:bg-[#E7E8F0] hover:border-[#C9A876] border border-[#E7E8F0] rounded-xl text-xs font-semibold text-[#181F4B] transition-all duration-150 font-albert flex items-center justify-center gap-1.5 cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
+                    >
+                      <Pencil className="w-3.5 h-3.5 text-[#C9A876]" />
+                      <span>Edit Info</span>
+                    </button>
+
+                    <button
+                      onClick={() => openDeliveryModal(outlet)}
+                      className="py-2 px-3 bg-[#FEF6E6] hover:bg-[#FDF0D5] hover:border-[#C9A876] border border-[#F7E5C4] rounded-xl text-xs font-bold text-[#181F4B] transition-all duration-150 font-albert flex items-center justify-center gap-1.5 cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
+                    >
+                      <Truck className="w-3.5 h-3.5 text-[#C9A876]" />
+                      <span>Atur Delivery</span>
+                    </button>
                   </div>
                 </div>
+              );
+            })
+          ) : (
+            <div className="col-span-full py-16 text-center text-[#6B7088]">
+              <Store className="w-10 h-10 text-[#E7E8F0] mx-auto mb-2" />
+              <p className="font-semibold text-sm text-[#1E202B]">Cabang outlet tidak ditemukan</p>
+            </div>
+          )}
+        </div>
+      ) : (
+        /* Outlet Admin: Dedicated Single Outlet Card Layout (No Pagination, Clean Card) */
+        <div className="max-w-xl">
+          {loading ? (
+            <div className="bg-white p-12 rounded-2xl border border-[#E7E8F0] text-center text-[#6B7088] shadow-xs">
+              <div className="w-7 h-7 border-3 border-[#181F4B] border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+              <p className="font-semibold text-sm">Memuat data cabang outlet...</p>
+            </div>
+          ) : filteredOutlets.length > 0 ? (
+            (() => {
+              const outlet = filteredOutlets[0];
+              const isUpdating = updatingId === outlet.id;
 
-                {/* Card Action Footer */}
-                <div className="pt-3 border-t border-[#E7E8F0] grid grid-cols-2 gap-2">
-                  <button
-                    onClick={() => openEditModal(outlet)}
-                    className="py-2 px-3 bg-[#F4F5F9] hover:bg-[#E7E8F0] hover:border-[#C9A876] border border-[#E7E8F0] rounded-xl text-xs font-semibold text-[#181F4B] transition-all duration-150 font-albert flex items-center justify-center gap-1.5 cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
-                  >
-                    <Pencil className="w-3.5 h-3.5 text-[#C9A876]" />
-                    <span>Edit Info</span>
-                  </button>
+              return (
+                <div className="bg-white p-6 rounded-2xl border border-[#E7E8F0] hover:border-[#C9A876]/40 transition-all duration-200 shadow-xs space-y-5">
+                  <div className="space-y-4">
+                    {/* Outlet Header & Operating Badge */}
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-2xl bg-[#F6F3EC] border border-[#C9A876]/30 flex items-center justify-center text-[#C9A876] shrink-0">
+                          <Store className="w-6 h-6" />
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-lg font-albert text-[#181F4B]">
+                            {outlet.name}
+                          </h3>
+                          <p className="text-xs text-[#6B7088] font-mono">
+                            ID Cabang: #{outlet.id}
+                          </p>
+                        </div>
+                      </div>
 
-                  <button
-                    onClick={() => openDeliveryModal(outlet)}
-                    className="py-2 px-3 bg-[#FEF6E6] hover:bg-[#FDF0D5] hover:border-[#C9A876] border border-[#F7E5C4] rounded-xl text-xs font-bold text-[#181F4B] transition-all duration-150 font-albert flex items-center justify-center gap-1.5 cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
-                  >
-                    <Truck className="w-3.5 h-3.5 text-[#C9A876]" />
-                    <span>Atur Delivery</span>
-                  </button>
+                      {/* Toggle Status Switch */}
+                      <button
+                        onClick={() => handleToggleOperating(outlet)}
+                        disabled={isUpdating}
+                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer disabled:opacity-50 hover:scale-105 active:scale-95 ${outlet.isOpen
+                            ? 'bg-[#EAF5EE] text-[#3E8A5A] border border-[#C6E7D2] hover:bg-[#d8eedf]'
+                            : 'bg-[#FDF0F2] text-[#C9576B] border border-[#FAF1F3] hover:bg-[#fae2e6]'
+                          }`}
+                        title="Klik untuk ubah status operasional toko"
+                      >
+                        {outlet.isOpen ? (
+                          <>
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            <span>AKTIF (BUKA)</span>
+                          </>
+                        ) : (
+                          <>
+                            <XCircle className="w-3.5 h-3.5" />
+                            <span>TUTUP SEMENTARA</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    {/* Details List */}
+                    <div className="space-y-2.5 pt-2 text-xs text-[#6B7088]">
+                      <div className="flex items-start gap-2.5">
+                        <MapPin className="w-4 h-4 text-[#C9A876] shrink-0 mt-0.5" />
+                        <span className="leading-relaxed text-[#1E202B] font-medium">
+                          {outlet.address}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2.5">
+                        <Clock className="w-4 h-4 text-[#C9A876] shrink-0" />
+                        <span>
+                          Jam Operasional:{' '}
+                          <strong className="text-[#181F4B]">
+                            {outlet.openHour || '07:00'} - {outlet.closeHour || '22:00'}
+                          </strong>
+                        </span>
+                      </div>
+
+                      {outlet.phone && (
+                        <div className="flex items-center gap-2.5">
+                          <Phone className="w-4 h-4 text-[#C9A876] shrink-0" />
+                          <span className="text-[#1E202B] font-medium">{outlet.phone}</span>
+                        </div>
+                      )}
+
+                      {(outlet.latitude !== undefined && outlet.latitude !== null) && (
+                        <div className="flex items-center gap-2.5 text-[11px] font-mono text-[#6B7088]">
+                          <Navigation className="w-3.5 h-3.5 text-[#C9A876] shrink-0" />
+                          <span>
+                            Koordinat GPS: {outlet.latitude}, {outlet.longitude}
+                          </span>
+                        </div>
+                      )}
+
+                      <div className="flex items-center gap-2.5 pt-1 border-t border-[#F4F5F9] text-xs">
+                        <Truck className="w-4 h-4 text-[#C9A876] shrink-0" />
+                        <span>
+                          Layanan Delivery:{' '}
+                          <strong className={outlet.isDeliveryEnabled !== false ? 'text-[#3E8A5A]' : 'text-[#C9576B]'}>
+                            {outlet.isDeliveryEnabled !== false ? 'Aktif' : 'Nonaktif'}
+                          </strong>
+                          {outlet.maxDeliveryDistanceKm ? ` (Maks. ${outlet.maxDeliveryDistanceKm} km)` : ''}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Card Action Footer */}
+                  <div className="pt-4 border-t border-[#E7E8F0] grid grid-cols-2 gap-3">
+                    <button
+                      onClick={() => openEditModal(outlet)}
+                      className="py-2.5 px-4 bg-[#F4F5F9] hover:bg-[#E7E8F0] hover:border-[#C9A876] border border-[#E7E8F0] rounded-xl text-xs font-semibold text-[#181F4B] transition-all duration-150 font-albert flex items-center justify-center gap-2 cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
+                    >
+                      <Pencil className="w-4 h-4 text-[#C9A876]" />
+                      <span>Edit Info Toko</span>
+                    </button>
+
+                    <button
+                      onClick={() => openDeliveryModal(outlet)}
+                      className="py-2.5 px-4 bg-[#FEF6E6] hover:bg-[#FDF0D5] hover:border-[#C9A876] border border-[#F7E5C4] rounded-xl text-xs font-bold text-[#181F4B] transition-all duration-150 font-albert flex items-center justify-center gap-2 cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
+                    >
+                      <Truck className="w-4 h-4 text-[#C9A876]" />
+                      <span>Atur Delivery & Tarif</span>
+                    </button>
+                  </div>
                 </div>
-              </div>
-            );
-          })
-        ) : (
-          <div className="col-span-full py-16 text-center text-[#6B7088]">
-            <Store className="w-10 h-10 text-[#E7E8F0] mx-auto mb-2" />
-            <p className="font-semibold text-sm text-[#1E202B]">Cabang outlet tidak ditemukan</p>
-          </div>
-        )}
-      </div>
+              );
+            })()
+          ) : (
+            <div className="bg-white p-12 rounded-2xl border border-[#E7E8F0] text-center text-[#6B7088] shadow-xs">
+              <Store className="w-10 h-10 text-[#E7E8F0] mx-auto mb-2" />
+              <p className="font-semibold text-sm text-[#1E202B]">Cabang outlet Anda belum terdaftar</p>
+            </div>
+          )}
+        </div>
+      )}
 
-      {/* Reusable Pagination */}
-      <div className="bg-white rounded-2xl border border-[#E7E8F0] shadow-xs overflow-hidden">
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          totalItems={filteredOutlets.length}
-          itemsPerPage={itemsPerPage}
-          onPageChange={setCurrentPage}
-          onItemsPerPageChange={(num) => {
-            setItemsPerPage(num);
-            setCurrentPage(1);
-          }}
-          itemsPerPageOptions={[6, 9, 12, 24]}
-        />
-      </div>
+      {/* Reusable Pagination (Super Admin Only) */}
+      {isSuperAdmin && (
+        <div className="bg-white rounded-2xl border border-[#E7E8F0] shadow-xs overflow-hidden">
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={filteredOutlets.length}
+            itemsPerPage={itemsPerPage}
+            onPageChange={setCurrentPage}
+            onItemsPerPageChange={(num) => {
+              setItemsPerPage(num);
+              setCurrentPage(1);
+            }}
+            itemsPerPageOptions={[6, 9, 12, 24]}
+          />
+        </div>
+      )}
 
       {/* Add / Edit Outlet Modal */}
       {modalOpen && (
