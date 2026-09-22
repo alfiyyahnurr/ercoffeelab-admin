@@ -74,9 +74,9 @@ interface OrderDetailData {
 }
 
 const ORDER_STEPS = [
-  { id: 'pending', label: 'Baru Masuk' },
+  { id: 'pending', label: 'Baru Masuk', aliases: ['confirmed', 'paid', 'checkout'] },
   { id: 'preparing', label: 'Sedang Dibuat' },
-  { id: 'ready', label: 'Siap Diambil / Antar' },
+  { id: 'ready', label: 'Siap Diambil atau Antar', aliases: ['on_delivery', 'delivering'] },
   { id: 'completed', label: 'Pesanan Selesai' },
 ];
 
@@ -130,7 +130,7 @@ export default function OrderDetailPage({
         }
       );
       if (res?.paid) {
-        alert('Pembayaran terkonfirmasi LUNAS dari Midtrans.');
+        alert('Pembayaran terkonfirmasi Lunas dari Midtrans.');
       } else {
         alert(res?.message || 'Status transaksi masih menunggu pembayaran di Midtrans.');
       }
@@ -202,6 +202,11 @@ export default function OrderDetailPage({
     );
   }
 
+  const currentStatusNorm = (order.orderStatus || '').toLowerCase();
+  const isIncomingStage = ['pending', 'confirmed', 'paid', 'checkout'].includes(currentStatusNorm);
+  const isPreparingStage = currentStatusNorm === 'preparing';
+  const isReadyStage = ['ready', 'on_delivery', 'delivering'].includes(currentStatusNorm);
+
   return (
     <div className="space-y-4 animate-fade-in max-w-6xl mx-auto pb-12">
       {/* Header Bar */}
@@ -228,7 +233,8 @@ export default function OrderDetailPage({
 
         {/* Action Status Transition Buttons */}
         <div className="flex items-center gap-2 flex-wrap">
-          {order.orderStatus === 'pending' && (
+          {/* Stage 1: Mulai Buat Pesanan */}
+          {isIncomingStage && (
             <Button
               variant="gold"
               size="sm"
@@ -236,23 +242,25 @@ export default function OrderDetailPage({
               onClick={() => handleUpdateStatus('preparing')}
               icon={<ChefHat className="w-4 h-4" />}
             >
-              Mulai Buat Pesanan (Preparing)
+              Mulai Buat Pesanan
             </Button>
           )}
 
-          {order.orderStatus === 'preparing' && (
+          {/* Stage 2: Tandai Siap Diambil atau Dikirim */}
+          {isPreparingStage && (
             <Button
               variant="primary"
               size="sm"
               loading={updating}
-              onClick={() => handleUpdateStatus('ready')}
+              onClick={() => handleUpdateStatus(order.fulfillmentType === 'delivery' ? 'on_delivery' : 'ready')}
               icon={<PackageCheck className="w-4 h-4" />}
             >
-              Tandai Siap (Ready)
+              {order.fulfillmentType === 'delivery' ? 'Tandai Siap Dikirim' : 'Tandai Siap Diambil'}
             </Button>
           )}
 
-          {order.orderStatus === 'ready' && (
+          {/* Stage 3: Selesaikan Pesanan */}
+          {isReadyStage && (
             <Button
               variant="primary"
               size="sm"
@@ -260,8 +268,24 @@ export default function OrderDetailPage({
               onClick={() => handleUpdateStatus('completed')}
               icon={<CheckSquare className="w-4 h-4" />}
             >
-              Selesaikan Pesanan (Completed)
+              Selesaikan Pesanan
             </Button>
+          )}
+
+          {/* Manual Status Selector Dropdown for Admin Flexibility */}
+          {order.orderStatus !== 'cancelled' && order.orderStatus !== 'completed' && (
+            <select
+              className="text-xs font-semibold bg-[#F4F5F9] border border-[#E7E8F0] rounded-lg px-2.5 py-1.5 text-[#181F4B] outline-none cursor-pointer hover:bg-[#EAEBF2] transition-colors"
+              value={order.orderStatus}
+              onChange={(e) => handleUpdateStatus(e.target.value)}
+              disabled={updating}
+            >
+              <option value="confirmed" disabled>Ubah Status Cepat</option>
+              <option value="preparing">Set Sedang Dibuat</option>
+              <option value="ready">Set Siap Diambil</option>
+              <option value="on_delivery">Set Sedang Dikirim</option>
+              <option value="completed">Set Pesanan Selesai</option>
+            </select>
           )}
 
           {order.paymentStatus === 'unpaid' && (
@@ -296,7 +320,15 @@ export default function OrderDetailPage({
           <p className="text-[11px] font-bold text-[#6B7088] uppercase tracking-wider font-albert mb-3">
             Tahapan Status Pesanan
           </p>
-          <StatusStepper steps={ORDER_STEPS} currentStepId={order.orderStatus} />
+          <StatusStepper
+            steps={ORDER_STEPS}
+            currentStepId={order.orderStatus}
+            onStepClick={(stepId) => {
+              if (stepId !== order.orderStatus && !updating) {
+                handleUpdateStatus(stepId);
+              }
+            }}
+          />
         </div>
       )}
 
@@ -308,7 +340,7 @@ export default function OrderDetailPage({
           <div className="bg-white rounded-xl border border-[#E7E8F0] shadow-xs overflow-hidden">
             <div className="p-3.5 border-b border-[#E7E8F0] bg-[#FAFAFD] flex items-center justify-between">
               <h2 className="font-albert font-bold text-xs text-[#181F4B] uppercase tracking-wider">
-                Daftar Item Menu ({order.items?.length || 0})
+                Daftar Item Menu
               </h2>
             </div>
             <Table compact>
@@ -366,7 +398,7 @@ export default function OrderDetailPage({
               {(order.fulfillmentType === 'delivery' || (order.deliveryFee ?? 0) > 0) && (
                 <div className="flex justify-between text-[#6B7088]">
                   <span>
-                    Ongkos Kirim (Delivery){order.deliveryDistanceKm ? ` [${order.deliveryDistanceKm} km]` : ''}:
+                    Ongkos Kirim Delivery {order.deliveryDistanceKm ? `${order.deliveryDistanceKm} km` : ''}:
                   </span>
                   <span className="font-semibold text-[#1E202B]">{formatRupiah(order.deliveryFee || 0)}</span>
                 </div>
@@ -443,7 +475,7 @@ export default function OrderDetailPage({
                     <Phone className="w-3.5 h-3.5" />
                   </div>
                   <div>
-                    <p className="text-[11px] text-[#8B93B8]">No. WhatsApp / HP</p>
+                    <p className="text-[11px] text-[#8B93B8]">No. WhatsApp atau Telepon</p>
                     <p className="font-bold text-[#1E202B]">{order.customerPhone}</p>
                   </div>
                 </div>
@@ -465,7 +497,7 @@ export default function OrderDetailPage({
                       : 'bg-[#FEF6E6] text-[#C9A876]'
                   }`}
                 >
-                  {order.fulfillmentType === 'delivery' ? 'Pengantaran (Delivery)' : 'Ambil Sendiri (Pickup)'}
+                  {order.fulfillmentType === 'delivery' ? 'Pengantaran Delivery' : 'Ambil Sendiri di Toko'}
                 </span>
               </div>
 
@@ -488,7 +520,7 @@ export default function OrderDetailPage({
             <div className="space-y-2 text-xs">
               <div className="flex items-center justify-between">
                 <span className="text-[#6B7088]">Channel:</span>
-                <span className="font-bold text-[#181F4B]">{order.paymentMethodName || 'Midtrans / Gateway'}</span>
+                <span className="font-bold text-[#181F4B]">{order.paymentMethodName || 'Midtrans Payment'}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-[#6B7088]">Status:</span>
@@ -502,7 +534,7 @@ export default function OrderDetailPage({
                       order.paymentStatus === 'paid' ? 'bg-[#3E8A5A]' : 'bg-[#C9576B]'
                     }`}
                   />
-                  {order.paymentStatus === 'paid' ? 'Lunas (Paid)' : 'Belum Lunas'}
+                  {order.paymentStatus === 'paid' ? 'Lunas' : 'Belum Lunas'}
                 </span>
               </div>
               {order.paidAt && (

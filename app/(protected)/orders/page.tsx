@@ -43,9 +43,9 @@ export interface OrderItem {
 
 const STATUS_TABS = [
   { id: 'all', label: 'Semua Status' },
-  { id: 'pending', label: 'Pending' },
-  { id: 'preparing', label: 'Diproses (Preparing)' },
-  { id: 'ready', label: 'Siap (Ready)' },
+  { id: 'pending', label: 'Baru Masuk' },
+  { id: 'preparing', label: 'Sedang Dibuat' },
+  { id: 'ready', label: 'Siap Diambil atau Antar' },
   { id: 'completed', label: 'Selesai' },
   { id: 'cancelled', label: 'Batal' },
 ];
@@ -160,14 +160,26 @@ export default function OrdersPage() {
     }
   };
 
+  const handleQuickStatus = async (orderId: string | number, newStatus: string) => {
+    try {
+      await apiFetch(`/api/orders/${orderId}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: newStatus }),
+      });
+      fetchOrders(true);
+    } catch (err: any) {
+      alert(err?.message || 'Gagal memperbarui status pesanan');
+    }
+  };
+
   return (
-    <div className="space-y-4 animate-fade-in max-w-7xl mx-auto">
-      {/* Top Header Card */}
-      <div className="bg-white rounded-xl border border-[#E7E8F0] p-4.5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="space-y-4 animate-fade-in max-w-7xl mx-auto pb-12">
+      {/* Top Header & Metrics Bar */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4.5 rounded-xl border border-[#E7E8F0] shadow-xs">
         <div>
           <div className="flex items-center gap-2.5">
             <h1 className="text-xl font-bold font-albert text-[#181F4B]">
-              Live Orders & Transaksi
+              Live Orders dan Transaksi
             </h1>
             <Badge variant="navy" dot>
               {isSuperAdmin && !selectedOutletId ? 'Semua Outlet' : activeOutletName}
@@ -182,7 +194,7 @@ export default function OrdersPage() {
         <div className="flex items-center gap-2.5 flex-wrap">
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#F4F5F9] border border-[#E7E8F0] text-xs">
             <Clock className="w-3.5 h-3.5 text-[#C9A876]" />
-            <span className="text-[#6B7088]">Diproses:</span>
+            <span className="text-[#6B7088]">Sedang Dibuat:</span>
             <span className="font-bold text-[#181F4B] font-albert">{preparingCount}</span>
           </div>
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#F4F5F9] border border-[#E7E8F0] text-xs">
@@ -212,7 +224,11 @@ export default function OrdersPage() {
               count:
                 t.id === 'all'
                   ? orders.length
-                  : orders.filter((o) => o.orderStatus === t.id).length,
+                  : t.id === 'pending'
+                  ? orders.filter((o) => ['pending', 'confirmed', 'paid', 'checkout'].includes((o.orderStatus || '').toLowerCase())).length
+                  : t.id === 'ready'
+                  ? orders.filter((o) => ['ready', 'on_delivery'].includes((o.orderStatus || '').toLowerCase())).length
+                  : orders.filter((o) => (o.orderStatus || '').toLowerCase() === t.id).length,
             }))}
             activeTab={activeTab}
             onChange={(id) => {
@@ -244,7 +260,7 @@ export default function OrdersPage() {
             )}
             <div className="w-full sm:w-56">
               <Input
-                placeholder="Cari order # / nama..."
+                placeholder="Cari order # atau nama..."
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
@@ -293,95 +309,134 @@ export default function OrdersPage() {
                   }
                 />
               ) : (
-                paginatedOrders.map((order) => (
-                  <TableRow key={order.id}>
-                    {/* Order Number */}
-                    <TableCell className="font-bold font-albert text-[#181F4B]">
-                      <Link
-                        href={`/orders/${order.id}`}
-                        className="hover:text-[#C9A876] hover:underline"
-                      >
-                        {order.orderNumber}
-                      </Link>
-                    </TableCell>
+                paginatedOrders.map((order) => {
+                  const statusNorm = (order.orderStatus || '').toLowerCase();
+                  const isIncoming = ['pending', 'confirmed', 'paid', 'checkout'].includes(statusNorm);
+                  const isPreparing = statusNorm === 'preparing';
+                  const isReady = ['ready', 'on_delivery'].includes(statusNorm);
 
-                    {/* Customer */}
-                    <TableCell>
-                      <div className="font-semibold text-xs text-[#1E202B]">
-                        {order.customerName || 'Tamu (Guest)'}
-                      </div>
-                      {order.customerPhone && (
-                        <div className="text-[11px] text-[#6B7088]">
-                          {order.customerPhone}
-                        </div>
-                      )}
-                    </TableCell>
-
-                    {/* Outlet Name (Super Admin Global) */}
-                    {isSuperAdmin && !selectedOutletId && (
-                      <TableCell className="text-xs text-[#6B7088]">
-                        {order.outletName || '-'}
+                  return (
+                    <TableRow key={order.id}>
+                      {/* Order Number */}
+                      <TableCell className="font-bold font-albert text-[#181F4B]">
+                        <Link
+                          href={`/orders/${order.id}`}
+                          className="hover:text-[#C9A876] hover:underline"
+                        >
+                          {order.orderNumber}
+                        </Link>
                       </TableCell>
-                    )}
 
-                    {/* Fulfillment Type */}
-                    <TableCell>
-                      <span
-                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold ${
-                          order.fulfillmentType === 'delivery'
-                            ? 'bg-[#EDF0FA] text-[#3B4B8C]'
-                            : 'bg-[#FEF6E6] text-[#C9A876]'
-                        }`}
-                      >
-                        {order.fulfillmentType === 'delivery' ? 'Delivery' : 'Pickup'}
-                      </span>
-                    </TableCell>
+                      {/* Customer */}
+                      <TableCell>
+                        <div className="font-semibold text-xs text-[#1E202B]">
+                          {order.customerName || 'Tamu'}
+                        </div>
+                        {order.customerPhone && (
+                          <div className="text-[11px] text-[#6B7088]">
+                            {order.customerPhone}
+                          </div>
+                        )}
+                      </TableCell>
 
-                    {/* Total Amount */}
-                    <TableCell className="font-bold text-[#181F4B] font-albert text-xs">
-                      {formatRupiah(order.total)}
-                    </TableCell>
+                      {/* Outlet Name (Super Admin Global) */}
+                      {isSuperAdmin && !selectedOutletId && (
+                        <TableCell className="text-xs text-[#6B7088]">
+                          {order.outletName || '-'}
+                        </TableCell>
+                      )}
 
-                    {/* Payment Status */}
-                    <TableCell>
-                      <span
-                        className={`inline-flex items-center gap-1.5 text-xs font-bold ${
-                          order.paymentStatus === 'paid'
-                            ? 'text-[#3E8A5A]'
-                            : 'text-[#C9576B]'
-                        }`}
-                      >
+                      {/* Fulfillment Type */}
+                      <TableCell>
                         <span
-                          className={`w-1.5 h-1.5 rounded-full ${
-                            order.paymentStatus === 'paid'
-                              ? 'bg-[#3E8A5A]'
-                              : 'bg-[#C9576B]'
+                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold ${
+                            order.fulfillmentType === 'delivery'
+                              ? 'bg-[#EDF0FA] text-[#3B4B8C]'
+                              : 'bg-[#FEF6E6] text-[#C9A876]'
                           }`}
-                        />
-                        {order.paymentStatus === 'paid' ? 'Lunas (Paid)' : 'Unpaid'}
-                      </span>
-                    </TableCell>
+                        >
+                          {order.fulfillmentType === 'delivery' ? 'Pengantaran' : 'Pick Up'}
+                        </span>
+                      </TableCell>
 
-                    {/* Order Status Badge */}
-                    <TableCell>
-                      <OrderStatusBadge status={order.orderStatus} />
-                    </TableCell>
+                      {/* Total Amount */}
+                      <TableCell className="font-bold text-[#181F4B] font-albert text-xs">
+                        {formatRupiah(order.total)}
+                      </TableCell>
 
-                    {/* Created Date */}
-                    <TableCell className="text-[11.5px] text-[#6B7088] whitespace-nowrap">
-                      {formatDate(order.createdAt)}
-                    </TableCell>
+                      {/* Payment Status */}
+                      <TableCell>
+                        <span
+                          className={`inline-flex items-center gap-1.5 text-xs font-bold ${
+                            order.paymentStatus === 'paid'
+                              ? 'text-[#3E8A5A]'
+                              : 'text-[#C9576B]'
+                          }`}
+                        >
+                          <span
+                            className={`w-1.5 h-1.5 rounded-full ${
+                              order.paymentStatus === 'paid'
+                                ? 'bg-[#3E8A5A]'
+                                : 'bg-[#C9576B]'
+                            }`}
+                          />
+                          {order.paymentStatus === 'paid' ? 'Lunas' : 'Belum Lunas'}
+                        </span>
+                      </TableCell>
 
-                    {/* Actions */}
-                    <TableCell className="text-right">
-                      <Link href={`/orders/${order.id}`}>
-                        <Button variant="secondary" size="sm" icon={<Eye className="w-3.5 h-3.5" />}>
-                          Detail
-                        </Button>
-                      </Link>
-                    </TableCell>
-                  </TableRow>
-                ))
+                      {/* Order Status Badge */}
+                      <TableCell>
+                        <OrderStatusBadge status={order.orderStatus} />
+                      </TableCell>
+
+                      {/* Created Date */}
+                      <TableCell className="text-[11.5px] text-[#6B7088] whitespace-nowrap">
+                        {formatDate(order.createdAt)}
+                      </TableCell>
+
+                      {/* Actions */}
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          {isIncoming && (
+                            <button
+                              onClick={() => handleQuickStatus(order.id, 'preparing')}
+                              className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-[#C9A876] text-[#181F4B] hover:bg-[#b89565] transition-colors"
+                              title="Mulai Buat Pesanan"
+                            >
+                              Mulai Buat
+                            </button>
+                          )}
+
+                          {isPreparing && (
+                            <button
+                              onClick={() => handleQuickStatus(order.id, order.fulfillmentType === 'delivery' ? 'on_delivery' : 'ready')}
+                              className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-[#181F4B] text-white hover:bg-[#232c66] transition-colors"
+                              title="Tandai Siap"
+                            >
+                              Tandai Siap
+                            </button>
+                          )}
+
+                          {isReady && (
+                            <button
+                              onClick={() => handleQuickStatus(order.id, 'completed')}
+                              className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-[#3E8A5A] text-white hover:bg-[#34744b] transition-colors"
+                              title="Selesaikan Pesanan"
+                            >
+                              Selesaikan
+                            </button>
+                          )}
+
+                          <Link href={`/orders/${order.id}`}>
+                            <Button variant="secondary" size="sm" icon={<Eye className="w-3.5 h-3.5" />}>
+                              Detail
+                            </Button>
+                          </Link>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               )}
             </TableBody>
           </Table>
