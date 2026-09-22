@@ -111,7 +111,7 @@ export default function OutletMenuPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await apiFetch<{ data: MenuProduct[] }>(`/api/outlets/${outletId}/menu`);
+      const res = await apiFetch<{ data: MenuProduct[] }>(`/api/outlets/${outletId}/menu?all=true`);
       let list: MenuProduct[] = [];
       if (Array.isArray(res?.data)) list = res.data;
       else if (Array.isArray(res)) list = res as any;
