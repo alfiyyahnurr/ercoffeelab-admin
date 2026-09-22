@@ -50,7 +50,7 @@ function LoginFormContent() {
             <div className="mb-6 p-4 rounded-2xl bg-[#FFF8EC] border border-[#F7E5C4] text-xs text-[#181F4B] flex items-start gap-3 text-left animate-in fade-in shadow-xs">
               <Clock className="w-5 h-5 text-[#C9A876] shrink-0 mt-0.5" />
               <div>
-                <p className="font-bold text-[#181F4B]">Sesi Harian Berakhir (00.00)</p>
+                <p className="font-bold text-[#181F4B]">Sesi Harian Berakhir pada 00.00</p>
                 <p className="text-[#6B7088] mt-0.5 leading-relaxed">
                   Sesi login Anda telah berakhir pada pergantian hari. Silakan masuk kembali menggunakan Google SSO.
                 </p>
@@ -131,8 +131,8 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center bg-[#0E1230] p-4">
-          <div className="w-12 h-12 border-3 border-[#C9A876] border-t-transparent rounded-full animate-spin" />
+        <div className="min-h-screen flex items-center justify-center bg-[#0E1230] p-4 font-source">
+          <div className="bg-white p-8 sm:p-10 rounded-3xl shadow-2xl text-center animate-pulse h-96 w-full max-w-md" />
         </div>
       }
     >
