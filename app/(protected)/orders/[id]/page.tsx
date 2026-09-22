@@ -210,15 +210,19 @@ export default function OrderDetailPage({
   return (
     <div className="space-y-4 animate-fade-in max-w-6xl mx-auto pb-12">
       {/* Header Bar */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-white p-4.5 rounded-xl border border-[#E7E8F0] shadow-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4.5 rounded-xl border border-[#E7E8F0] shadow-xs">
         <div className="flex items-center gap-3">
           <Link href="/orders">
-            <button className="w-8 h-8 rounded-lg bg-[#F4F5F9] border border-[#E7E8F0] flex items-center justify-center text-[#181F4B] hover:bg-[#EAEBF2] transition-colors">
+            <button
+              className="w-8 h-8 rounded-lg bg-[#F4F5F9] border border-[#E7E8F0] flex items-center justify-center text-[#181F4B] hover:bg-[#EAEBF2] transition-colors cursor-pointer"
+              title="Kembali ke Daftar Orders"
+              aria-label="Kembali"
+            >
               <ArrowLeft className="w-4 h-4" />
             </button>
           </Link>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-lg font-bold font-albert text-[#181F4B]">
                 {order.orderNumber}
               </h1>
@@ -232,7 +236,7 @@ export default function OrderDetailPage({
         </div>
 
         {/* Action Status Transition Buttons */}
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-2.5 shrink-0 self-start sm:self-center">
           {/* Stage 1: Mulai Buat Pesanan */}
           {isIncomingStage && (
             <Button
@@ -267,25 +271,10 @@ export default function OrderDetailPage({
               loading={updating}
               onClick={() => handleUpdateStatus('completed')}
               icon={<CheckSquare className="w-4 h-4" />}
+              className="bg-[#3E8A5A] hover:bg-[#34744B] text-white border-none shadow-xs"
             >
               Selesaikan Pesanan
             </Button>
-          )}
-
-          {/* Manual Status Selector Dropdown for Admin Flexibility */}
-          {order.orderStatus !== 'cancelled' && order.orderStatus !== 'completed' && (
-            <select
-              className="text-xs font-semibold bg-[#F4F5F9] border border-[#E7E8F0] rounded-lg px-2.5 py-1.5 text-[#181F4B] outline-none cursor-pointer hover:bg-[#EAEBF2] transition-colors"
-              value={order.orderStatus}
-              onChange={(e) => handleUpdateStatus(e.target.value)}
-              disabled={updating}
-            >
-              <option value="confirmed" disabled>Ubah Status Cepat</option>
-              <option value="preparing">Set Sedang Dibuat</option>
-              <option value="ready">Set Siap Diambil</option>
-              <option value="on_delivery">Set Sedang Dikirim</option>
-              <option value="completed">Set Pesanan Selesai</option>
-            </select>
           )}
 
           {order.paymentStatus === 'unpaid' && (
@@ -296,7 +285,7 @@ export default function OrderDetailPage({
               onClick={handleSyncPaymentStatus}
               icon={<RefreshCw className="w-3.5 h-3.5" />}
             >
-              Cek Status Midtrans
+              Cek Status Bayar
             </Button>
           )}
 
