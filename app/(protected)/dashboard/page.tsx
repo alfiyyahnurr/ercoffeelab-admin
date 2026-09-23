@@ -333,7 +333,8 @@ export default function DashboardPage() {
               {/* Bar Columns Container */}
               <div className="relative h-full flex items-end justify-around pl-16 pr-4 pb-6 z-10">
                 {trendList.map((item, idx) => {
-                  const heightPercent = maxScale > 0 ? Math.min(100, (item.revenue / maxScale) * 100) : 0;
+                  const hasData = (item.revenue || 0) > 0;
+                  const heightPercent = hasData && maxScale > 0 ? Math.min(100, Math.max(4, (item.revenue / maxScale) * 100)) : 0;
                   return (
                     <div
                       key={idx}
@@ -346,11 +347,15 @@ export default function DashboardPage() {
                         <p className="text-[9.5px] text-[#8B93B8]">{item.orders} Order</p>
                       </div>
 
-                      {/* Bar Fill */}
-                      <div
-                        style={{ height: `${Math.max(4, heightPercent)}%` }}
-                        className="w-full rounded-t-md bg-gradient-to-t from-[#181F4B] to-[#C9A876] group-hover:from-[#0E1230] group-hover:to-[#DEBE91] transition-all duration-300 shadow-xs"
-                      />
+                      {/* Bar Fill (Solid Navy Blue without gradient) */}
+                      {hasData ? (
+                        <div
+                          style={{ height: `${heightPercent}%` }}
+                          className="w-full rounded-t-md bg-[#181F4B] group-hover:bg-[#232C66] transition-all duration-300 shadow-xs"
+                        />
+                      ) : (
+                        <div className="w-full h-0" />
+                      )}
 
                       {/* X-Axis Label */}
                       <span className="absolute -bottom-5 text-[10px] font-semibold text-[#6B7088] truncate max-w-[48px]">
