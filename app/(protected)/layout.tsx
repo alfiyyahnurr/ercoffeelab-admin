@@ -29,7 +29,7 @@ function InnerLayout({ children }: { children: React.ReactNode }) {
     const handleLogoutSessionExpired = () => {
       removeStoredToken();
       if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
-        window.location.href = '/login?reason=daily_cycle_expired';
+        window.location.href = '/login';
       }
     };
 

@@ -2,11 +2,10 @@
 
 import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Clock, AlertCircle } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 
 function LoginFormContent() {
   const searchParams = useSearchParams();
-  const reason = searchParams.get('reason');
   const error = searchParams.get('error');
 
   const handleGoogleSSO = () => {
@@ -44,31 +43,6 @@ function LoginFormContent() {
           <p className="text-sm text-[#6B7088] leading-relaxed mb-6 max-w-xs mx-auto">
             Gunakan akun Google yang telah terdaftar untuk mengakses dashboard admin.
           </p>
-
-          {/* Daily Expiration Notice Banner */}
-          {reason === 'daily_cycle_expired' && (
-            <div className="mb-6 p-4 rounded-2xl bg-[#FFF8EC] border border-[#F7E5C4] text-xs text-[#181F4B] flex items-start gap-3 text-left animate-in fade-in shadow-xs">
-              <Clock className="w-5 h-5 text-[#C9A876] shrink-0 mt-0.5" />
-              <div>
-                <p className="font-bold text-[#181F4B]">Sesi Harian Berakhir pada 00.00</p>
-                <p className="text-[#6B7088] mt-0.5 leading-relaxed">
-                  Sesi login Anda telah berakhir pada pergantian hari. Silakan masuk kembali menggunakan Google SSO.
-                </p>
-              </div>
-            </div>
-          )}
-
-          {reason === 'session_expired' && (
-            <div className="mb-6 p-4 rounded-2xl bg-[#FFF8EC] border border-[#F7E5C4] text-xs text-[#181F4B] flex items-start gap-3 text-left animate-in fade-in shadow-xs">
-              <Clock className="w-5 h-5 text-[#C9A876] shrink-0 mt-0.5" />
-              <div>
-                <p className="font-bold text-[#181F4B]">Sesi Login Berakhir</p>
-                <p className="text-[#6B7088] mt-0.5 leading-relaxed">
-                  Sesi Anda telah kedaluwarsa. Silakan masuk kembali.
-                </p>
-              </div>
-            </div>
-          )}
 
           {error === 'not_registered' && (
             <div className="mb-6 p-4 rounded-2xl bg-[#FDF0F2] border border-[#FAF1F3] text-xs text-[#C9576B] flex items-start gap-3 text-left animate-in fade-in shadow-xs">

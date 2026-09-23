@@ -92,9 +92,6 @@ export function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL('/dashboard', request.url));
     }
     const loginUrl = new URL('/login', request.url);
-    if (isExpired) {
-      loginUrl.searchParams.set('reason', 'daily_cycle_expired');
-    }
     const res = NextResponse.redirect(loginUrl);
     if (isExpired) {
       res.cookies.delete('session');
@@ -116,9 +113,7 @@ export function middleware(request: NextRequest) {
 
   if (!isPublicRoute && !payload) {
     const loginUrl = new URL('/login', request.url);
-    if (isExpired) {
-      loginUrl.searchParams.set('reason', 'daily_cycle_expired');
-    } else {
+    if (!isExpired) {
       loginUrl.searchParams.set('from', pathname);
     }
     const res = NextResponse.redirect(loginUrl);
